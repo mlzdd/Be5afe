@@ -6,7 +6,7 @@ Last updated: 2026-05-17
 
 ## Overview
 
-App phases 1–18 are complete. This document tracks the data pipeline phases — the work required to move from a static-data app to a live, community-assisted, operationally correct content platform. It is a forward plan, not an as-built record yet.
+App phases 1–18 are complete. This document tracks the data pipeline phases — the work required to move from a static-data app to a live, community-assisted, operationally correct content platform. It now serves as the canonical as-built ledger for data work as phases move from planned → in progress → complete.
 
 For context on decisions, see:
 - `3_DATA_ACQUISITION_GOVERNANCE.md` — 18 data sourcing and governance decisions
@@ -36,11 +36,34 @@ D1, D2, D3, D4, and D7 are all unblocked and can run in parallel once their loca
 
 ---
 
+## Current status snapshot
+
+| Phase | Status | Current state |
+|---|---|---|
+| D1 — Emergency numbers seed | ✅ Complete | 40 high-confidence records seeded; idempotency verified |
+| D2 — Official alert feeds | 🚧 In progress | FCDO + State Dept live; DFAT/Smartraveller still pending |
+| D3 — Packing list + medical card sync | ✅ Complete | Authenticated Firestore persistence + guest fallback + migration path shipped |
+| D4 — Admin portal v1 | 🚧 In progress | All five screens built locally; live admin verification still pending |
+| D5 — ScamReport submission + review path | 🚧 In progress | Mobile flow built locally; live submit → moderate → render loop still pending |
+| D6 — AI triage | ⏳ Not started | Waits on a proven D5 path |
+| D7 — Seed export + diff fetch | ⏳ Not started | Independent next major branch |
+| D8 — GDPR deletion flow | ⏳ Not started | Unblocked by D3 technically; still needs implementation + legal review |
+| D9a — Store-ready build | ⏳ Not started | Waits on pre-launch blockers |
+| D9b — Public launch readiness | ⏳ Not started | Waits on full data pipeline |
+
+**Current verification note (2026-05-17):**
+- Root app typecheck passes
+- Root Jest suite passes: **19 suites, 91 tests**
+- Admin portal production build passes
+- D4/D5 live acceptance is not yet claimed because no admin account has been allowlisted for the end-to-end Firestore moderation check
+
+---
+
 ## Phases
 
 ### D1 — Emergency Numbers Seed (Wikidata)
 
-**Status:** ⏳ Not started
+**Status:** ✅ Complete
 
 **Scope:**
 - Script: `scripts/seed-emergency-numbers.ts`
@@ -56,11 +79,18 @@ D1, D2, D3, D4, and D7 are all unblocked and can run in parallel once their loca
 - High-confidence records present for top-40 countries
 - Emergency screen shows correct numbers for at least 10 spot-checked countries
 
+**As built (2026-05-17):**
+- Added `scripts/seed-emergency-numbers.ts`
+- Corrected the seed design to use current Wikidata country-level emergency-number coverage plus an explicit ITU-T E.129 high-confidence verification set
+- Seeded 40 high-confidence records into `emergencyNumbers/{countryId}`
+- Verified rerun idempotency (`created 0, updated 0, skipped 40`) and spot-checked 10 stored records
+- The mobile screen still uses the legacy bundled emergency-number dataset until the D7 bundle/diff reader is in place
+
 ---
 
 ### D2 — Official Alert Feeds
 
-**Status:** ⏳ Not started
+**Status:** 🚧 In progress
 
 **Scope:**
 - Ingestion scripts for DFAT (Australia), FCO (UK), State Dept (US)
@@ -74,11 +104,18 @@ D1, D2, D3, D4, and D7 are all unblocked and can run in parallel once their loca
 - Alerts visible in app for affected countries
 - No duplicate alerts on re-run
 
+**As built so far (2026-05-17):**
+- Added `scripts/ingest-fco-alerts.ts` using the official GOV.UK Content API; 124 FCDO alerts live in Firestore
+- Added `scripts/ingest-state-dept-alerts.ts` using the official State Department RSS feed; current advisories live in Firestore under stable country-based IDs
+- Added shared alert contract, Firestore alert repository, `useAlerts`, and a real `LiveAlertsScreen`
+- Verified reruns refresh existing alerts rather than creating duplicates
+- Remaining before full scope completion: DFAT/Smartraveller adapter
+
 ---
 
 ### D3 — Packing List + Medical Card → Firestore
 
-**Status:** ⏳ Not started
+**Status:** ✅ Complete
 
 **Scope:**
 - Packing list: migrate from AsyncStorage to `users/{uid}/packingList/{itemId}`
@@ -92,11 +129,18 @@ D1, D2, D3, D4, and D7 are all unblocked and can run in parallel once their loca
 - Guest mode still works with AsyncStorage only
 - No data loss on migration for existing users
 
+**As built (2026-05-17):**
+- Extracted both features behind repository contracts instead of screen-local persistence
+- Added hybrid repositories: authenticated users load/save via Firestore, guests continue using AsyncStorage
+- Implemented one-time authenticated migration: if cloud state is empty, local AsyncStorage data is copied to Firestore and then cleared locally
+- Added Firestore writes at `users/{uid}/packingList/{itemId}` and `users/{uid}/medicalCard/default`
+- Added migration-path tests for both hybrid repositories and hook coverage for both features
+
 ---
 
 ### D4 — Admin Portal v1
 
-**Status:** ⏳ Not started
+**Status:** 🚧 In progress
 
 **Scope:** Simple internal React + Firebase web app (Decision 10). Five screens:
 
@@ -113,12 +157,18 @@ Fields surfaced in v1: `updatedAt`, `updatedBy`, `previousStatus` (Decision 14 �
 - Can publish, archive, and moderate ScamPatterns end-to-end
 - Auth-gated (Firebase Auth, admin email allowlist)
 
+**As built so far (2026-05-17):**
+- Added a separate Vite + React admin app under `admin/`
+- Built all five v1 screens, custom-claim auth gating, and allowlisted admin-claim grant script
+- Added admin-only Firestore writes plus transactional lifecycle event writes for ScamPattern and ScamReport moderation actions
+- Remaining before completion: verify the portal end-to-end against a live admin account and Firestore project
+
 ---
 
 ### D5 — ScamReport Submission + Human Review Path
 
-**Status:** ⏳ Not started  
-**Blocked by:** D4 (moderation queue must exist before submissions go live)
+**Status:** 🚧 In progress  
+**Blocked by:** D4 live verification before submissions go live
 
 **Scope:**
 - In-app ScamReport form (category, location, description, optional photo)
@@ -130,6 +180,12 @@ Fields surfaced in v1: `updatedAt`, `updatedBy`, `previousStatus` (Decision 14 �
 - User can submit a scam report from the app
 - Report appears in admin moderation queue (D4)
 - Human-accepted reports appear in-app with Reported styling
+
+**As built so far (2026-05-17):**
+- Added mobile ScamReport submission flow behind a repository contract and replaced the Report Incident placeholder screen
+- Authenticated submissions write a client-assigned opaque ID, initial `submitted` status, and a paired append-only `ScamReportSubmitted` event
+- Added public subscription support for `accepted` / `auto_published` reports and rendered them in Scam Alerts with a visually distinct Reported treatment plus reviewed/unreviewed sub-signal
+- Remaining before completion: live-submit one report, confirm it lands in the admin queue, accept it, and verify its in-app rendering from Firestore after D4 live verification is complete
 
 ---
 

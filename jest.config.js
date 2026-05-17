@@ -19,9 +19,12 @@ module.exports = {
         '<rootDir>/src/modules/**/__tests__/**/*.test.ts',
         '<rootDir>/src/shared/**/__tests__/**/*.test.ts',
         '<rootDir>/src/products/**/__tests__/**/*.test.ts',
+        '<rootDir>/src/infra/**/__tests__/**/*.test.ts',
         '<rootDir>/src/modules/**/*.test.ts',
         '<rootDir>/src/shared/**/*.test.ts',
         '<rootDir>/src/products/**/*.test.ts',
+        '<rootDir>/src/infra/**/*.test.ts',
+        '<rootDir>/scripts/**/*.test.ts',
       ],
     },
     // Full jest-expo preset for RN component tests

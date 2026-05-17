@@ -31,6 +31,7 @@ import { NearestHospitalScreen } from '../screens/NearestHospitalScreen';
 import { WeatherScreen } from '../screens/WeatherScreen';
 import { HealthGuideScreen } from '../screens/HealthGuideScreen';
 import { LocalAppsScreen } from '../screens/LocalAppsScreen';
+import { ReportIncidentScreen } from '../screens/ReportIncidentScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -66,9 +67,7 @@ export function RootNavigator() {
         <Stack.Screen name="EmergencyMedicalCard" component={EmergencyMedicalCardScreen} />
         <Stack.Screen name="ScamAlerts" component={ScamAlertsScreen} />
         <Stack.Screen name="SafeZones" component={SafeZonesScreen} />
-        <Stack.Screen name="ReportIncident">
-          {(props) => <PlaceholderScreen {...props} title="Report Incident" />}
-        </Stack.Screen>
+        <Stack.Screen name="ReportIncident" component={ReportIncidentScreen} />
         <Stack.Screen name="CountrySafety" component={CountrySafetyScreen} />
         <Stack.Screen name="CountryDetails" component={CountryDetailsScreen} />
         <Stack.Screen name="LocalLaws" component={LocalLawsScreen} />

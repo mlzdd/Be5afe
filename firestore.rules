@@ -2,6 +2,58 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    function isVisibleScamReport() {
+      return resource.data.status in ['accepted', 'auto_published'];
+    }
+
+    function isValidScamReportSubmission(reportId) {
+      return request.auth != null
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'title',
+          'category',
+          'description',
+          'countryId',
+          'countryName',
+          'localityText',
+          'localityIds',
+          'severity',
+          'status',
+          'userId',
+          'photoUrl',
+          'submittedAt',
+          'createdAt',
+          'updatedAt',
+          'schemaVersion'
+        ])
+        && request.resource.data.id == reportId
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'submitted'
+        && request.resource.data.title is string
+        && request.resource.data.category is string
+        && request.resource.data.description is string
+        && request.resource.data.countryId is string
+        && request.resource.data.countryName is string
+        && request.resource.data.severity in ['low', 'medium', 'high']
+        && request.resource.data.localityIds is list
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    function isValidScamReportSubmittedEvent(eventId) {
+      return request.auth != null
+        && eventId == 'ScamReportSubmitted_' + request.resource.data.entityId
+        && request.resource.data.type == 'ScamReportSubmitted'
+        && request.resource.data.entityType == 'ScamReport'
+        && request.resource.data.actorId == request.auth.uid
+        && request.resource.data.actorType == 'user'
+        && existsAfter(/databases/$(database)/documents/scamReports/$(request.resource.data.entityId))
+        && getAfter(/databases/$(database)/documents/scamReports/$(request.resource.data.entityId)).data.userId == request.auth.uid
+        && request.resource.data.schemaVersion == 1;
+    }
 
     // User profile + all subcollections — owner only
     match /users/{uid} {
@@ -14,6 +66,15 @@ service cloud.firestore {
 
       // Friends list (subcollection per user)
       match /friends/{friendId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // Cloud-backed personal travel data
+      match /packingList/{itemId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /medicalCard/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
 
@@ -37,9 +98,21 @@ service cloud.firestore {
     }
 
     // Global safety data — public read, no client writes
-    match /countries/{docId}    { allow read: if true; allow write: if false; }
-    match /scams/{docId}        { allow read: if true; allow write: if false; }
-    match /healthGuides/{docId} { allow read: if true; allow write: if false; }
-    match /alerts/{docId}       { allow read: if true; allow write: if false; }
+    match /countries/{docId}    { allow read: if true; allow write: if isAdmin(); }
+    match /scams/{docId}        { allow read: if true; allow write: if isAdmin(); }
+    match /scamPatterns/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /scamReports/{docId}  {
+      allow read: if isAdmin() || isVisibleScamReport();
+      allow create: if isAdmin() || isValidScamReportSubmission(docId);
+      allow update, delete: if isAdmin();
+    }
+    match /emergencyNumbers/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /healthGuides/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /alerts/{docId}       { allow read: if true; allow write: if isAdmin(); }
+    match /events/{docId}       {
+      allow read: if isAdmin();
+      allow create: if isAdmin() || isValidScamReportSubmittedEvent(docId);
+      allow update, delete: if false;
+    }
   }
 }

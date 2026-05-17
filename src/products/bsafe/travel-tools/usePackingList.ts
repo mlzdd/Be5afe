@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { PackingListRepository } from '@shared/contracts/PackingListRepository';
 import type { PackingItem, PackingCategory } from './types';
-
-const KEY = '@be5afe_packing_list';
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
+
+interface CurrentUser { uid: string }
 
 interface PackingListState {
   items: PackingItem[];
@@ -21,24 +21,42 @@ interface PackingListState {
   getItemsByCategory(category: PackingCategory): PackingItem[];
 }
 
-export function usePackingList(): PackingListState {
+export function usePackingList(
+  repository: PackingListRepository,
+  currentUser: CurrentUser | null,
+): PackingListState {
   const [items, setItems] = useState<PackingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const userId = currentUser?.uid ?? null;
 
   const persist = useCallback(async (updated: PackingItem[]) => {
-    await AsyncStorage.setItem(KEY, JSON.stringify(updated));
+    await repository.save(userId, updated);
     setItems(updated);
-  }, []);
+  }, [repository, userId]);
 
   useEffect(() => {
-    AsyncStorage.getItem(KEY)
-      .then((raw) => raw ? setItems(JSON.parse(raw)) : undefined)
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, []);
+    let cancelled = false;
+    setIsLoading(true);
+
+    repository.load(userId)
+      .then((loaded) => {
+        if (!cancelled) setItems(loaded);
+      })
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [repository, userId]);
 
   const addItem = useCallback(async (data: Omit<PackingItem, 'id' | 'createdAt'>) => {
-    await persist([...items, { ...data, id: newId(), packed: data.packed ?? false, createdAt: new Date().toISOString() }]);
+    await persist([
+      ...items,
+      { ...data, id: newId(), packed: data.packed ?? false, createdAt: new Date().toISOString() },
+    ]);
   }, [items, persist]);
 
   const updateItem = useCallback(async (id: string, updates: Partial<PackingItem>) => {
@@ -72,5 +90,16 @@ export function usePackingList(): PackingListState {
   const getItemsByCategory = useCallback((category: PackingCategory) =>
     items.filter((i) => i.category === category), [items]);
 
-  return { items, isLoading, addItem, updateItem, deleteItem, togglePacked, addItemsFromTemplate, clearAllItems, getProgress, getItemsByCategory };
+  return {
+    items,
+    isLoading,
+    addItem,
+    updateItem,
+    deleteItem,
+    togglePacked,
+    addItemsFromTemplate,
+    clearAllItems,
+    getProgress,
+    getItemsByCategory,
+  };
 }

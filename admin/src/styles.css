@@ -1,0 +1,27 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #17212b;
+  background: #f5f7f7;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+button { cursor: pointer; }
+.shell { min-height: 100vh; display: grid; grid-template-columns: 240px 1fr; }
+aside { background: #013220; color: white; padding: 24px; }
+aside h1 { margin-top: 0; font-size: 20px; }
+nav { display: grid; gap: 8px; }
+nav button { text-align: left; border: 0; border-radius: 10px; padding: 12px; background: transparent; color: white; }
+nav button.active { background: rgba(255,255,255,0.14); }
+main { padding: 24px; }
+.toolbar { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 24px; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 14px; overflow: hidden; }
+th, td { padding: 12px; border-bottom: 1px solid #e5eceb; text-align: left; vertical-align: top; }
+td button { margin-right: 8px; }
+.badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e8f0ef; font-size: 12px; }
+.badge-published, .badge-accepted { background: #dcfce7; }
+.badge-archived, .badge-rejected { background: #fee2e2; }
+.notice, .login { max-width: 420px; margin: 10vh auto; background: white; padding: 24px; border-radius: 14px; }
+.login { display: grid; gap: 12px; }
+.login input, .editorial-form input, .editorial-form textarea { width: 100%; padding: 10px; }
+.editorial-form { background: white; padding: 16px; border-radius: 14px; display: grid; gap: 10px; margin-bottom: 18px; }

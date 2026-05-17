@@ -27,3 +27,14 @@ export interface PackingItem {
   tripId?: string;
   createdAt: string;
 }
+
+export interface MedicalCard {
+  bloodType: string;
+  allergies: string;
+  conditions: string;
+  medications: string;
+  organDonor: boolean;
+  emergencyNotes: string;
+  doctorName: string;
+  doctorPhone: string;
+}

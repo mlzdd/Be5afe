@@ -7,7 +7,10 @@ import type { useGroups } from '@modules/social/useGroups';
 import type { useWidgets } from '@products/bsafe/widgets/useWidgets';
 import type { useDocuments } from '@products/bsafe/travel-tools/useDocuments';
 import type { usePackingList } from '@products/bsafe/travel-tools/usePackingList';
+import type { useMedicalCard } from '@products/bsafe/travel-tools/useMedicalCard';
 import type { useLocationSharing } from '@modules/social/useLocationSharing';
+import type { useAlerts } from '@products/bsafe/alerts/useAlerts';
+import type { useScamReports } from '@products/bsafe/scam-reports/useScamReports';
 
 type TripsState = ReturnType<typeof useTrips>;
 type EmergencyState = ReturnType<typeof useEmergency>;
@@ -16,7 +19,10 @@ type GroupsState = ReturnType<typeof useGroups>;
 type WidgetsState = ReturnType<typeof useWidgets>;
 type DocumentsState = ReturnType<typeof useDocuments>;
 type PackingListState = ReturnType<typeof usePackingList>;
+type MedicalCardState = ReturnType<typeof useMedicalCard>;
 type LocationSharingState = ReturnType<typeof useLocationSharing>;
+type AlertsState = ReturnType<typeof useAlerts>;
+type ScamReportsState = ReturnType<typeof useScamReports>;
 
 export interface TravelToolsContext {
   documents: DocumentsState['documents'];
@@ -34,6 +40,9 @@ export interface TravelToolsContext {
   clearAllItems: PackingListState['clearAllItems'];
   getProgress: PackingListState['getProgress'];
   getItemsByCategory: PackingListState['getItemsByCategory'];
+  medicalCard: MedicalCardState['card'];
+  isMedicalCardLoading: MedicalCardState['isLoading'];
+  saveMedicalCard: MedicalCardState['saveCard'];
 }
 
 // Minimal auth surface exposed to screens
@@ -58,6 +67,8 @@ export interface AppContextValue {
   widgets: WidgetsState;
   travelTools: TravelToolsContext;
   locationSharing: LocationSharingState;
+  alerts: AlertsState;
+  scamReports: ScamReportsState;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);

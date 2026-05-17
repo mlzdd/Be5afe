@@ -8,8 +8,9 @@
     "baseUrl": "..",
     "paths": {
       "@products/*": ["src/products/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@modules/*": ["src/modules/*"]
     }
   },
-  "include": ["*.ts", "../src/products/**/*.ts", "../src/shared/**/*.ts"]
+  "include": ["*.ts", "../src/products/**/*.ts", "../src/shared/**/*.ts", "../src/modules/**/*.ts"]
 }

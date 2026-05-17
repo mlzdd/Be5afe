@@ -6,53 +6,29 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, spacing, typography } from '@shared/theme';
-
-const KEY = '@be5afe_medical_card';
-
-interface MedicalCard {
-  bloodType: string;
-  allergies: string;
-  conditions: string;
-  medications: string;
-  organDonor: boolean;
-  emergencyNotes: string;
-  doctorName: string;
-  doctorPhone: string;
-}
-
-const EMPTY: MedicalCard = {
-  bloodType: '',
-  allergies: '',
-  conditions: '',
-  medications: '',
-  organDonor: false,
-  emergencyNotes: '',
-  doctorName: '',
-  doctorPhone: '',
-};
+import { useAppContext } from '../AppContext';
+import { EMPTY_MEDICAL_CARD } from '@products/bsafe/travel-tools/useMedicalCard';
+import type { MedicalCard } from '@products/bsafe/travel-tools/types';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
 
 export function EmergencyMedicalCardScreen() {
   const navigation = useNavigation();
-  const [card, setCard] = useState<MedicalCard>(EMPTY);
+  const { travelTools } = useAppContext();
+  const { medicalCard: card, saveMedicalCard } = travelTools;
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<MedicalCard>(EMPTY);
+  const [draft, setDraft] = useState<MedicalCard>(EMPTY_MEDICAL_CARD);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(KEY).then((raw) => {
-      if (raw) { const data = JSON.parse(raw); setCard(data); setDraft(data); }
-    });
-  }, []);
+    setDraft(card);
+  }, [card]);
 
   const startEdit = () => { setDraft(card); setEditing(true); };
 
   const saveCard = async () => {
-    await AsyncStorage.setItem(KEY, JSON.stringify(draft));
-    setCard(draft);
+    await saveMedicalCard(draft);
     setEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
