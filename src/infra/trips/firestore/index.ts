@@ -1,0 +1,1 @@
+export { FirestoreTripsRepository } from './FirestoreTripsRepository';

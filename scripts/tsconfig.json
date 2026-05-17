@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "baseUrl": "..",
+    "paths": {
+      "@products/*": ["src/products/*"],
+      "@shared/*": ["src/shared/*"]
+    }
+  },
+  "include": ["*.ts", "../src/products/**/*.ts", "../src/shared/**/*.ts"]
+}

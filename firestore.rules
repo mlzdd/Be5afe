@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User profile + all subcollections — owner only
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Trips
+      match /trips/{tripId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // Friends list (subcollection per user)
+      match /friends/{friendId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // Location sharing outbox
+      match /sharedLocation/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // Friend requests — any authenticated user can send/receive
+    match /friendRequests/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Groups + messages — any authenticated user (tighten in Phase 18)
+    match /groups/{groupId} {
+      allow read, write: if request.auth != null;
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // Global safety data — public read, no client writes
+    match /countries/{docId}    { allow read: if true; allow write: if false; }
+    match /scams/{docId}        { allow read: if true; allow write: if false; }
+    match /healthGuides/{docId} { allow read: if true; allow write: if false; }
+    match /alerts/{docId}       { allow read: if true; allow write: if false; }
+  }
+}

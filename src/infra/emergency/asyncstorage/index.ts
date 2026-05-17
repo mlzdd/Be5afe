@@ -1,0 +1,1 @@
+export { AsyncStorageEmergencyRepository } from './AsyncStorageEmergencyRepository';
