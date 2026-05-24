@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -28,6 +28,9 @@ import { FirestoreFriendsRepository, FirestoreGroupsRepository, FirestoreLocatio
 import { ExpoLocationService } from '@infra/location/expo/ExpoLocationService';
 import { FirestoreAlertRepository, FirestoreScamReportRepository } from '@infra/realtime/firestore';
 import { HybridMedicalCardRepository, HybridPackingListRepository } from '@infra/travel-tools';
+
+// Infra — sync
+import { runContentSync } from '@infra/sync/ContentSyncService';
 
 // App
 import { AppContextProvider, type AppContextValue } from './AppContext';
@@ -63,6 +66,10 @@ function InnerProviders({ children }: { children: ReactNode }) {
   const medicalCard = useMedicalCard(medicalCardRepo, user);
   const alerts = useAlerts(alertsRepo);
   const scamReports = useScamReports(scamReportsRepo, user);
+
+  useEffect(() => {
+    void runContentSync();
+  }, []);
 
   const ctx: AppContextValue = {
     auth: { user, signOut },

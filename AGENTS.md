@@ -42,6 +42,7 @@ The active planning and data documents live in `docs/plans/` in this repo:
 - `docs/plans/3_DATA_ACQUISITION_GOVERNANCE.md`
 - `docs/plans/4_DATA_PLATFORM_DESIGN.md`
 - `docs/plans/5_DATA_PLAN_AS_BUILT.md` — data pipeline phases (D1–D9), tracked as built
+- `docs/plans/6_VISUAL_DESIGN.md` — visual design direction, screen-by-screen targets, component gaps, implementation phases
 
 The legacy `bsafe` repo remains useful for historical archaeology and seed data only; do not treat its copies of these documents as canonical.
 
@@ -179,7 +180,7 @@ See `MODULAR_APP_PLAN_PHASES_AS_BUILT.md` for the full phase-by-phase record of 
 | D4 — Admin portal v1 | ✅ | All 5 screens verified against live Firestore; 54 scamPatterns migrated from legacy `scams` collection |
 | D5 — ScamReport submission + human review | ✅ | Submit → moderate (with inline edit) → render loop verified end-to-end |
 | D6 — AI triage Cloud Function | ⏳ | Blocked on proven D5 path |
-| D7 — Build-time seed export + app-start diff fetch | ⏳ | Independent; unblocked |
+| D7 — Build-time seed export + app-start diff fetch | ✅ | seed.json bundled (54 patterns, 242 alerts, 40 emergency); app-start diff sync wired |
 | D8 — GDPR deletion flow | ⏳ | Technically unblocked; needs Decision 18 legal review before launch |
 | D9a — Store-ready build | ⏳ | Needs D3, D4, D8 + Apple/Google accounts |
 | D9b — Public launch readiness | ⏳ | Needs full pipeline |

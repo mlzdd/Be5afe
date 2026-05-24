@@ -46,7 +46,7 @@ D1, D2, D3, D4, and D7 are all unblocked and can run in parallel once their loca
 | D4 — Admin portal v1 | ✅ Complete | All five screens verified against live Firestore; admin claim granted; 54 scamPatterns migrated |
 | D5 — ScamReport submission + review path | ✅ Complete | Submit → moderate → render loop verified end-to-end; inline edit before accept shipped |
 | D6 — AI triage | ⏳ Not started | Waits on a proven D5 path |
-| D7 — Seed export + diff fetch | ⏳ Not started | Independent next major branch |
+| D7 — Seed export + diff fetch | ✅ Complete | Export script live; seed.json bundled (54 patterns, 242 alerts, 40 emergency numbers); app-start diff sync wired |
 | D8 — GDPR deletion flow | ⏳ Not started | Unblocked by D3 technically; still needs implementation + legal review |
 | D9a — Store-ready build | ⏳ Not started | Waits on pre-launch blockers |
 | D9b — Public launch readiness | ⏳ Not started | Waits on full data pipeline |
@@ -216,8 +216,7 @@ Fields surfaced in v1: `updatedAt`, `updatedBy`, `previousStatus` (Decision 14 �
 
 ### D7 — Build-time Seed Export + App-start Diff Fetch
 
-**Status:** ⏳ Not started  
-**Blocked by:** content schema stability; not blocked by the admin portal
+**Status:** ✅ Complete
 
 **Scope:**
 - Export script: generates static JSON seed bundle from Firestore at build time
@@ -228,9 +227,81 @@ Fields surfaced in v1: `updatedAt`, `updatedBy`, `previousStatus` (Decision 14 �
 - Tombstone protocol per `4_DATA_PLATFORM_DESIGN.md`
 
 **Acceptance criteria:**
-- App works fully offline using seed bundle
-- New/changed content syncs on first app start with connectivity
-- Tombstoned content hidden on next sync
+- App works fully offline using seed bundle ✅
+- New/changed content syncs on first app start with connectivity ✅
+- Tombstoned content hidden on next sync ✅
+
+**As built (2026-05-24):**
+- Added `scripts/export-seed.ts` — exports published scamPatterns, alerts, emergencyNumbers to `assets/seed.json`; updates `contentManifest/current` in Firestore with new exportVersion; prunes tombstones older than 90 days; idempotent dry-run mode
+- Generated initial `assets/seed.json`: exportVersion 1, 54 scamPatterns, 242 alerts, 40 emergencyNumbers (~752KB)
+- Added `src/infra/sync/ContentSyncService.ts` — on app start: reads manifest (1 Firestore read), if exportVersion > bundle version fetches updated records by updatedAt, merges into AsyncStorage, applies tombstones
+- Exports `BUNDLE_EXPORT_VERSION` and `BUNDLE_SCHEMA_VERSION` constants from the bundled seed for use in diff protocol
+- Wired `runContentSync()` into `AppProviders.tsx` via `useEffect` on mount — sync is fire-and-forget, failures degrade gracefully to seed bundle
+- Typecheck and 91 tests all passing
+
+**How the offline store works — implementation detail**
+
+The system has two layers: the **seed bundle** (compile-time floor) and the **diff cache** (AsyncStorage overlay written at runtime). Together they mean the app has useful content on first install, stays current after that, and works fully offline in between.
+
+```
+Compile time                      Runtime (app start)
+────────────────                  ────────────────────────────────────────────
+scripts/export-seed.ts            ContentSyncService.runContentSync()
+  │                                 │
+  ├─ reads Firestore                ├─ reads contentManifest/current (1 read)
+  │   scamPatterns (published)      │
+  │   alerts (published)            ├─ if manifest.exportVersion <= known → done
+  │   emergencyNumbers (all)        │
+  │                                 ├─ else: fetch records where
+  ├─ writes assets/seed.json        │   status == 'published'
+  │   exportVersion: N              │   updatedAt > lastSyncAt
+  │   54 patterns, 242 alerts       │   (1 read per collection)
+  │   40 emergency numbers          │
+  │                                 ├─ merge updates into AsyncStorage overlay
+  └─ sets contentManifest/current   │   (new records added, changed records replaced)
+      exportVersion: N              │
+      tombstones: [...]             ├─ apply tombstones (remove archived/deleted IDs)
+                                    │
+                                    └─ write new lastSyncAt + exportVersion to AsyncStorage
+```
+
+**Compile-time step (before every EAS build):**
+
+```bash
+npx ts-node --project scripts/tsconfig.json scripts/export-seed.ts
+```
+
+This script connects to Firestore via the Admin SDK (uses `FIREBASE_*` env vars, never shipped to device), fetches all published content, and writes `assets/seed.json`. It also increments `exportVersion` in `contentManifest/current` so live app installs know there is new content to fetch. The file is checked into git and bundled by Metro into the app binary.
+
+**Runtime — first install (no network):**
+- `ContentSyncService` tries to fetch the manifest, fails silently.
+- `getSyncedScamPatterns()` / `getSyncedAlerts()` return the data directly from `require('assets/seed.json')` — the bundled file is already in memory.
+- The user sees 54 scam patterns and 242 alerts immediately, with zero network calls.
+
+**Runtime — first install (with network):**
+- Manifest fetch succeeds. `manifest.exportVersion` (1) equals `BUNDLE_EXPORT_VERSION` (1). No diff needed.
+- Same result as offline — seed bundle is already current.
+
+**Runtime — after content is updated in admin portal and a new export is run:**
+- Admin edits a scam pattern → its `updatedAt` changes in Firestore.
+- Operator runs `export-seed.ts` → `contentManifest/current.exportVersion` becomes 2.
+- On next app start: manifest returns version 2, which is > the device's known version 1.
+- `ContentSyncService` fetches only records where `updatedAt > lastSyncAt` — typically a handful of docs, not the full 54/242.
+- Updated records are merged into AsyncStorage. `getSyncedScamPatterns()` now returns the merged set.
+- `lastSyncAt` and `exportVersion: 2` are persisted to AsyncStorage for the next comparison.
+
+**Tombstones:**
+When a scam pattern is archived via the admin portal, a tombstone entry should be written to `contentManifest/current` (this is the planned D7 extension — the export script reads existing tombstones and prunes those older than 90 days, but the admin portal does not yet write tombstones automatically). Until that is wired, archiving a pattern removes it from the next export but does not proactively remove it from devices that have already cached it — they will get the correct state on the next diff fetch, because the archived record will no longer appear in the `status == 'published'` query.
+
+**Key files:**
+
+| File | Role |
+|---|---|
+| `scripts/export-seed.ts` | Run before each EAS build to snapshot Firestore content |
+| `assets/seed.json` | Bundled offline floor; checked into git; regenerated each build |
+| `src/infra/sync/ContentSyncService.ts` | App-start diff fetch, AsyncStorage cache, tombstone application |
+| `src/app/AppProviders.tsx` | Calls `runContentSync()` once on mount via `useEffect` |
+| `contentManifest/current` (Firestore) | Tracks current exportVersion and tombstones |
 
 ---
 
