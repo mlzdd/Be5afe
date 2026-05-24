@@ -9,30 +9,31 @@ const aliases = {
 
 module.exports = {
   projects: [
-    // Lightweight node env for pure-logic module/shared tests (no RN transforms)
+    // Pure node env — only for tests with zero RN dependency (scripts, schema utils)
     {
       displayName: 'logic',
       testEnvironment: 'node',
       transform: { '^.+\\.(ts|tsx)$': ['babel-jest', { presets: ['babel-preset-expo'] }] },
       moduleNameMapper: aliases,
       testMatch: [
-        '<rootDir>/src/modules/**/__tests__/**/*.test.ts',
-        '<rootDir>/src/shared/**/__tests__/**/*.test.ts',
-        '<rootDir>/src/products/**/__tests__/**/*.test.ts',
-        '<rootDir>/src/infra/**/__tests__/**/*.test.ts',
-        '<rootDir>/src/modules/**/*.test.ts',
-        '<rootDir>/src/shared/**/*.test.ts',
-        '<rootDir>/src/products/**/*.test.ts',
-        '<rootDir>/src/infra/**/*.test.ts',
         '<rootDir>/scripts/**/*.test.ts',
+        '<rootDir>/src/shared/**/__tests__/**/*.test.ts',
+        '<rootDir>/src/shared/**/*.test.ts',
       ],
     },
-    // Full jest-expo preset for RN component tests
+    // jest-expo preset for all hook + component tests (handles RN 0.81 module format)
     {
       displayName: 'rn',
       preset: 'jest-expo',
       moduleNameMapper: aliases,
       testMatch: [
+        '<rootDir>/src/modules/**/__tests__/**/*.test.ts',
+        '<rootDir>/src/modules/**/*.test.ts',
+        '<rootDir>/src/products/**/__tests__/**/*.test.ts',
+        '<rootDir>/src/products/**/*.test.ts',
+        '<rootDir>/src/infra/**/__tests__/**/*.test.ts',
+        '<rootDir>/src/infra/**/*.test.ts',
+        '<rootDir>/src/app/**/__tests__/**/*.test.ts',
         '<rootDir>/src/**/__tests__/**/*.test.tsx',
         '<rootDir>/src/**/*.test.tsx',
       ],

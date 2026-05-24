@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useChat } from '../useChat';
 import type { ChatCompletionClient, ChatCompletionRequest, ChatCompletionResponse } from '@shared/contracts/ChatCompletionClient';
 import { ChatRateLimitError } from '@shared/contracts/ChatCompletionClient';

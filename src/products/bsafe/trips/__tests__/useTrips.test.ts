@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useTrips } from '../useTrips';
 import type { TripsRepository, Trip } from '@shared/contracts/TripsRepository';
 

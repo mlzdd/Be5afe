@@ -1,6 +1,6 @@
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useAlerts } from '../useAlerts';
 import type { AlertRepository } from '@shared/contracts/AlertRepository';
 import type { TravelAlert } from '../types';

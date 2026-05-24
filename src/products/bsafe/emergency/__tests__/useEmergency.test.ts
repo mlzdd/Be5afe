@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useEmergency } from '../useEmergency';
 import type { EmergencyRepository } from '@shared/contracts/EmergencyRepository';
 

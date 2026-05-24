@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useNearbyPlaces } from '../useNearbyPlaces';
 import type { PlacesClient, Place, LatLng } from '@shared/contracts/PlacesClient';
 

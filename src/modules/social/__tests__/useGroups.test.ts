@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useGroups } from '../useGroups';
 import type { GroupsRepository, Group, GroupMessage } from '@shared/contracts/SocialRepository';
 

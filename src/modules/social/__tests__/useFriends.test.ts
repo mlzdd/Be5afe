@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-native';
 import { useFriends } from '../useFriends';
 import type { FriendsRepository, Friend, FriendRequest } from '@shared/contracts/SocialRepository';
 
