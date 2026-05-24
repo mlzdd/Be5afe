@@ -13,6 +13,8 @@ import { formatDateRange, calculateDuration, getCategoryIcon } from '@products/b
 import { AddActivityModal } from './trips/AddActivityModal';
 import { AddBookingModal } from './trips/AddBookingModal';
 import type { Activity, Booking } from '@products/bsafe/trips/types';
+import { getCountryByName } from '@modules/regional-data';
+import { TripMapSection } from '../components/TripMapSection';
 
 type Route = RouteProp<RootStackParamList, 'TripDetails'>;
 type Tab = 'itinerary' | 'bookings';
@@ -83,6 +85,8 @@ export function TripDetailsScreen() {
       },
     ]);
   };
+  const flag = getCountryByName(trip.country)?.flag;
+  const totalCost = getTripCost(trip);
 
   return (
     <SafeAreaView style={s.safe}>
@@ -92,7 +96,7 @@ export function TripDetailsScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.textInverse} />
         </TouchableOpacity>
         <View style={s.headerMeta}>
-          <Text style={s.headerTitle} numberOfLines={1}>{trip.destination}</Text>
+          <Text style={s.headerTitle} numberOfLines={1}>{trip.destination} {flag ?? ''}</Text>
           <Text style={s.headerSub}>{trip.country}</Text>
         </View>
         <TouchableOpacity onPress={handleDeleteTrip} style={s.back}>
@@ -104,8 +108,11 @@ export function TripDetailsScreen() {
       <View style={s.summary}>
         <Text style={s.summaryDates}>{formatDateRange(trip.startDate, trip.endDate)}</Text>
         <Text style={s.summaryDuration}>{calculateDuration(trip.startDate, trip.endDate)} days</Text>
+        {totalCost > 0 ? <Text style={s.summaryCost}>Total cost: ${totalCost.toFixed(2)}</Text> : null}
         {trip.notes ? <Text style={s.summaryNotes} numberOfLines={2}>{trip.notes}</Text> : null}
       </View>
+
+      <TripMapSection trip={trip} />
 
       {/* Tab bar */}
       <View style={s.tabs}>
@@ -225,6 +232,14 @@ export function TripDetailsScreen() {
   );
 }
 
+function getTripCost(trip: { itinerary: Array<{ activities: Activity[] }>; bookings: Booking[] }): number {
+  const activityTotal = trip.itinerary
+    .flatMap((day) => day.activities)
+    .reduce((sum, activity) => sum + (activity.price ?? 0), 0);
+  const bookingTotal = trip.bookings.reduce((sum, booking) => sum + (booking.price ?? 0), 0);
+  return activityTotal + bookingTotal;
+}
+
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', padding: spacing.base, backgroundColor: colors.brandDark, gap: spacing.sm },
@@ -235,6 +250,7 @@ const s = StyleSheet.create({
   summary: { padding: spacing.base, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   summaryDates: { ...typography.h4, color: colors.textPrimary },
   summaryDuration: { ...typography.caption, color: colors.textSecondary },
+  summaryCost: { ...typography.bodySmall, color: colors.brandDark, marginTop: spacing.xs, fontWeight: '700' },
   summaryNotes: { ...typography.bodySmall, color: colors.textTertiary, marginTop: spacing.xs },
   tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border },
   tab: { flex: 1, paddingVertical: spacing.sm, alignItems: 'center' },

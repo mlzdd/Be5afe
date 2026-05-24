@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '@shared/theme';
 import type { Booking } from '@products/bsafe/trips/types';
+import { DateTimePicker } from '../../components/DateTimePicker';
 
 type BookingType = Booking['type'];
 
@@ -118,13 +119,7 @@ export function AddBookingModal({ visible, onClose, onAdd }: Props) {
             />
           </View>
 
-          <View style={s.field}>
-            <Text style={s.label}>Date</Text>
-            <TextInput
-              style={s.input} value={date} onChangeText={setDate}
-              placeholder="YYYY-MM-DD" placeholderTextColor={colors.placeholder}
-            />
-          </View>
+          <DateTimePicker label="Date" value={date} onChange={setDate} placeholder="Select date" mode="date" />
 
           <View style={s.field}>
             <Text style={s.label}>Price</Text>

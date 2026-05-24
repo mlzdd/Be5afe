@@ -9,6 +9,9 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography } from '@shared/theme';
 import { ExpoLocationService } from '@infra/location/expo/ExpoLocationService';
 import type { LatLng } from '@shared/contracts/PlacesClient';
+import { useLocation } from '@modules/maps';
+import { useAppContext } from '../AppContext';
+import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
 
 // WMO weather code → description + icon
 function describeWeather(code: number): { label: string; icon: string; color: string } {
@@ -46,6 +49,7 @@ interface WeatherData {
     tempMax: number;
     tempMin: number;
     precipitation: number;
+    uvIndex: number;
   }>;
   timezone: string;
   locationName: string | null;
@@ -58,14 +62,14 @@ async function fetchWeather(coords: LatLng, locationName: string | null): Promis
     `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${coords.lat}&longitude=${coords.lng}` +
     `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m` +
-    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,uv_index_max` +
     `&timezone=auto&forecast_days=7`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Weather fetch failed: ${res.status}`);
   const json = await res.json() as {
     current: { temperature_2m: number; apparent_temperature: number; relative_humidity_2m: number; weather_code: number; wind_speed_10m: number };
-    daily: { time: string[]; weather_code: number[]; temperature_2m_max: number[]; temperature_2m_min: number[]; precipitation_sum: number[] };
+    daily: { time: string[]; weather_code: number[]; temperature_2m_max: number[]; temperature_2m_min: number[]; precipitation_sum: number[]; uv_index_max: number[] };
     timezone: string;
   };
 
@@ -83,6 +87,7 @@ async function fetchWeather(coords: LatLng, locationName: string | null): Promis
       tempMax: Math.round(json.daily.temperature_2m_max[i]),
       tempMin: Math.round(json.daily.temperature_2m_min[i]),
       precipitation: Math.round(json.daily.precipitation_sum[i]),
+      uvIndex: Math.round(json.daily.uv_index_max[i] ?? 0),
     })),
     timezone: json.timezone,
     locationName,
@@ -91,6 +96,8 @@ async function fetchWeather(coords: LatLng, locationName: string | null): Promis
 
 export function WeatherScreen() {
   const navigation = useNavigation();
+  const { location: appLocation } = useAppContext();
+  const { location } = useLocation();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [coords, setCoords] = useState<LatLng | null>(null);
   const [loading, setLoading] = useState(false);
@@ -121,8 +128,16 @@ export function WeatherScreen() {
     load(c, name);
   }, [load]);
 
-  // Auto-locate on mount
-  useEffect(() => { locateAndLoad(); }, []);
+  // Use selected app location first; the refresh/locate button can still switch to GPS.
+  useEffect(() => {
+    if (location?.coordinates) {
+      const name = [appLocation.selectedCityName, appLocation.selectedCountryName].filter(Boolean).join(', ') || null;
+      setCoords(location.coordinates);
+      load(location.coordinates, name);
+    } else {
+      locateAndLoad();
+    }
+  }, [location?.coordinates?.lat, location?.coordinates?.lng, appLocation.selectedCityName, appLocation.selectedCountryName, load, locateAndLoad]);
 
   const cond = weather ? describeWeather(weather.current.weatherCode) : null;
 
@@ -143,6 +158,7 @@ export function WeatherScreen() {
             : <Ionicons name="refresh" size={22} color={colors.textInverse} />}
         </TouchableOpacity>
       </View>
+      <ViewingLocationBanner />
 
       {error && !weather ? (
         <View style={s.center}>
@@ -185,7 +201,26 @@ export function WeatherScreen() {
           <View style={s.statsRow}>
             <Stat icon="thermometer" label="Feels like" value={`${weather.current.feelsLike}°C`} />
             <Stat icon="water" label="Humidity" value={`${weather.current.humidity}%`} />
-            <Stat icon="speedometer" label="Wind" value={`${weather.current.windSpeed} km/h`} />
+            <Stat icon="speedometer" label={getWindSpeedLevel(weather.current.windSpeed)} value={`${weather.current.windSpeed} km/h`} />
+            <Stat icon="sunny" label={getUVIndexLevel(weather.daily[0]?.uvIndex ?? 0).level} value={`UV ${weather.daily[0]?.uvIndex ?? 0}`} />
+          </View>
+
+          <View style={s.recommendation}>
+            <Ionicons name="sparkles-outline" size={20} color={travelRecommendation(weather).color} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.recommendationTitle}>Travel recommendation</Text>
+              <Text style={s.recommendationText}>{travelRecommendation(weather).text}</Text>
+            </View>
+          </View>
+
+          <View style={s.suggestions}>
+            <Text style={s.sectionTitle}>Packing Suggestions</Text>
+            {packingSuggestions(weather).map((item) => (
+              <View key={item} style={s.suggestionRow}>
+                <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
+                <Text style={s.suggestionText}>{item}</Text>
+              </View>
+            ))}
           </View>
 
           {/* 7-day forecast */}
@@ -230,6 +265,63 @@ function Stat({ icon, label, value }: { icon: string; label: string; value: stri
   );
 }
 
+function getUVIndexLevel(uvIndex: number): { level: string; color: string } {
+  if (uvIndex <= 2) return { level: 'Low', color: colors.success };
+  if (uvIndex <= 5) return { level: 'Moderate', color: colors.warning };
+  if (uvIndex <= 7) return { level: 'High', color: '#FF9800' };
+  if (uvIndex <= 10) return { level: 'Very High', color: colors.error };
+  return { level: 'Extreme', color: '#9C27B0' };
+}
+
+function getWindSpeedLevel(speed: number): string {
+  if (speed < 12) return 'Light wind';
+  if (speed < 30) return 'Moderate wind';
+  if (speed < 50) return 'Strong wind';
+  return 'Very strong wind';
+}
+
+function travelRecommendation(weather: WeatherData): { text: string; color: string } {
+  const today = weather.daily[0];
+  if (weather.current.temp < 0 || weather.current.temp > 38) {
+    return { text: 'Extreme temperatures. Limit outdoor activity and plan extra water or warm layers.', color: colors.error };
+  }
+  if (weather.current.weatherCode >= 95 || weather.current.windSpeed > 50) {
+    return { text: 'Severe weather conditions. Avoid non-essential travel if possible.', color: colors.error };
+  }
+  if ((today?.precipitation ?? 0) > 50 || weather.current.weatherCode >= 80) {
+    return { text: 'Heavy precipitation expected. Pack rain gear and allow extra travel time.', color: colors.warning };
+  }
+  if ((today?.precipitation ?? 0) > 20 || weather.current.windSpeed > 30 || weather.current.temp < 10 || weather.current.temp > 30) {
+    return { text: 'Moderate weather conditions. Pack appropriately for the forecast.', color: colors.warning };
+  }
+  return { text: 'Good weather conditions for travel. Keep checking local updates.', color: colors.info };
+}
+
+function packingSuggestions(weather: WeatherData): string[] {
+  const today = weather.daily[0];
+  const suggestions: string[] = [];
+  if ((today?.tempMin ?? weather.current.temp) < 10) {
+    suggestions.push('Warm jacket or coat');
+    suggestions.push('Long pants and sweaters');
+  } else if ((today?.tempMin ?? weather.current.temp) < 20) {
+    suggestions.push('Light jacket or cardigan');
+  }
+  if ((today?.tempMax ?? weather.current.temp) > 25) {
+    suggestions.push('Light, breathable clothing');
+    suggestions.push('Shorts and t-shirts');
+  }
+  if ((today?.precipitation ?? 0) > 30) {
+    suggestions.push('Rain jacket or umbrella');
+    suggestions.push('Waterproof shoes');
+  }
+  if ((today?.uvIndex ?? 0) > 6) {
+    suggestions.push('Sunscreen SPF 30+');
+    suggestions.push('Sunglasses and hat');
+  }
+  if (suggestions.length === 0) suggestions.push('Standard travel clothing');
+  return suggestions;
+}
+
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', padding: spacing.base, backgroundColor: colors.brandDark, gap: spacing.md },
@@ -251,6 +343,12 @@ const s = StyleSheet.create({
   statValue: { ...typography.h4, color: colors.textPrimary },
   statLabel: { ...typography.caption, color: colors.textSecondary },
   sectionTitle: { ...typography.h4, color: colors.textPrimary, marginBottom: spacing.sm },
+  recommendation: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.card, borderRadius: 16, padding: spacing.base, marginBottom: spacing.md },
+  recommendationTitle: { ...typography.label, color: colors.textPrimary },
+  recommendationText: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
+  suggestions: { backgroundColor: colors.card, borderRadius: 16, padding: spacing.base, marginBottom: spacing.md },
+  suggestionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
+  suggestionText: { ...typography.bodySmall, color: colors.textSecondary, flex: 1 },
   forecast: { backgroundColor: colors.card, borderRadius: 16, overflow: 'hidden', marginBottom: spacing.md },
   dayRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.sm, gap: spacing.sm },
   dayBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },

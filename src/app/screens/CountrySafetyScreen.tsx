@@ -7,6 +7,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography } from '@shared/theme';
 import { countrySafetyRatings } from '@products/bsafe/safety-data/countrySafetyRatings';
 import type { RootStackParamList } from '../navigation/types';
+import { useAppContext } from '../AppContext';
+import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -29,11 +31,19 @@ const COUNTRIES = Object.entries(countrySafetyRatings)
 
 export function CountrySafetyScreen() {
   const navigation = useNavigation<Nav>();
+  const { location } = useAppContext();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(
-    () => query.trim() ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())) : COUNTRIES,
-    [query],
+    () => {
+      const base = query.trim()
+        ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()))
+        : COUNTRIES;
+      if (!location.selectedCountryName) return base;
+      return [...base].sort((a, b) =>
+        a.name === location.selectedCountryName ? -1 : b.name === location.selectedCountryName ? 1 : 0);
+    },
+    [query, location.selectedCountryName],
   );
 
   return (
@@ -44,6 +54,7 @@ export function CountrySafetyScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Country Safety</Text>
       </View>
+      <ViewingLocationBanner />
 
       <View style={styles.searchRow}>
         <Ionicons name="search" size={18} color={colors.textTertiary} style={styles.searchIcon} />

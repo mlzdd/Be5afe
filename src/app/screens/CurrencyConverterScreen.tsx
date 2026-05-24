@@ -1,9 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography } from '@shared/theme';
+import { useUserPreferences } from '@modules/user-preferences/UserPreferencesContext';
 
 interface CurrencyRate {
   code: string;
@@ -35,6 +37,8 @@ const CURRENCIES: CurrencyRate[] = [
   { code: 'VND', name: 'Vietnamese Dong',    symbol: '₫',  rateToUSD: 24500 },
   { code: 'IDR', name: 'Indonesian Rupiah',  symbol: 'Rp', rateToUSD: 15700 },
 ];
+
+const STORAGE_KEY = '@be5afe_currency_converter';
 
 function convert(amount: number, from: CurrencyRate, to: CurrencyRate): number {
   const usd = amount / from.rateToUSD;
@@ -90,9 +94,35 @@ function CurrencyPicker({ selected, onSelect }: PickerProps) {
 
 export function CurrencyConverterScreen() {
   const navigation = useNavigation();
+  const { preferences } = useUserPreferences();
   const [amount, setAmount] = useState('100');
   const [from, setFrom] = useState<CurrencyRate>(CURRENCIES[0]);
   const [to, setTo] = useState<CurrencyRate>(CURRENCIES[1]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
+      if (raw) {
+        const saved = JSON.parse(raw) as { from?: string; to?: string; amount?: string };
+        const savedFrom = CURRENCIES.find((currency) => currency.code === saved.from);
+        const savedTo = CURRENCIES.find((currency) => currency.code === saved.to);
+        if (saved.amount) setAmount(saved.amount);
+        if (savedFrom) setFrom(savedFrom);
+        if (savedTo) setTo(savedTo);
+        return;
+      }
+
+      const preferred = CURRENCIES.find((currency) => currency.code === preferences.displayCurrency.code);
+      if (preferred) setFrom(preferred);
+    }).catch(() => {});
+  }, [preferences.displayCurrency.code]);
+
+  useEffect(() => {
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({
+      amount,
+      from: from.code,
+      to: to.code,
+    })).catch(() => {});
+  }, [amount, from.code, to.code]);
 
   const numericAmount = parseFloat(amount) || 0;
   const result = convert(numericAmount, from, to);

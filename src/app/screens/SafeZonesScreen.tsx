@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, Platform,
+  ActivityIndicator, Platform, Linking, Alert,
 } from 'react-native';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +18,24 @@ const placesClient = new GooglePlacesClient(
   process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '',
 );
 const gpsService = new ExpoLocationService();
+
+function openDirections(place: { location: LatLng; name: string }) {
+  const label = encodeURIComponent(place.name);
+  const url = Platform.select({
+    ios: `maps://?q=${label}&ll=${place.location.lat},${place.location.lng}`,
+    android: `geo:${place.location.lat},${place.location.lng}?q=${place.location.lat},${place.location.lng}(${label})`,
+    default: `https://www.google.com/maps/search/?api=1&query=${place.location.lat},${place.location.lng}`,
+  });
+  Linking.openURL(url).catch(() => Alert.alert('Could not open maps', place.name));
+}
+
+function callPlace(phoneNumber?: string) {
+  if (!phoneNumber) {
+    Alert.alert('No phone number', 'No phone number is available for this place.');
+    return;
+  }
+  Linking.openURL(`tel:${phoneNumber}`).catch(() => Alert.alert('Cannot dial', phoneNumber));
+}
 
 export function SafeZonesScreen() {
   const navigation = useNavigation();
@@ -138,6 +156,16 @@ export function SafeZonesScreen() {
                         : `${(place.distanceMeters / 1000).toFixed(1)}km`}
                     </Text>
                   )}
+                  <View style={s.cardActions}>
+                    <TouchableOpacity style={s.cardAction} onPress={() => openDirections(place)}>
+                      <Ionicons name="navigate" size={14} color={colors.brandDark} />
+                      <Text style={s.cardActionText}>Directions</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={s.cardAction} onPress={() => callPlace(place.phoneNumber)}>
+                      <Ionicons name="call" size={14} color={colors.brandDark} />
+                      <Text style={s.cardActionText}>Call</Text>
+                    </TouchableOpacity>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -164,10 +192,13 @@ const s = StyleSheet.create({
   hint: { alignItems: 'center', padding: spacing.base, gap: spacing.sm },
   hintText: { ...typography.bodySmall, color: colors.textTertiary, textAlign: 'center' },
   cards: { paddingHorizontal: spacing.base, gap: spacing.sm },
-  card: { width: 120, backgroundColor: colors.background, borderRadius: 10, padding: spacing.sm, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.border },
+  card: { width: 160, backgroundColor: colors.background, borderRadius: 10, padding: spacing.sm, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.border },
   cardIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   cardName: { ...typography.caption, color: colors.textPrimary, textAlign: 'center', fontWeight: '600' },
   cardDist: { ...typography.caption, color: colors.textSecondary },
+  cardActions: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
+  cardAction: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.brandDark + '10', borderRadius: 999, paddingHorizontal: 6, paddingVertical: 4 },
+  cardActionText: { ...typography.caption, color: colors.brandDark, fontWeight: '700' },
   callout: { padding: spacing.sm, maxWidth: 180 },
   calloutTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
   calloutSub: { ...typography.bodySmall, color: colors.textSecondary },

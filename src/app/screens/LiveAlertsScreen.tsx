@@ -7,10 +7,16 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography } from '@shared/theme';
 import { useAppContext } from '../AppContext';
 import type { TravelAlert } from '@products/bsafe/alerts/types';
+import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
 
 export function LiveAlertsScreen() {
   const navigation = useNavigation();
-  const { alerts } = useAppContext();
+  const { alerts, location } = useAppContext();
+  const visibleAlerts = location.selectedCountryName
+    ? alerts.alerts.filter((alert) =>
+      alert.countryName === location.selectedCountryName ||
+      alert.countryId.toLowerCase() === location.selectedCountryId?.toLowerCase())
+    : alerts.alerts;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -20,15 +26,16 @@ export function LiveAlertsScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Live Alerts</Text>
       </View>
+      <ViewingLocationBanner />
       <ScrollView contentContainerStyle={styles.body}>
         {alerts.isLoading && <Text style={styles.sub}>Loading live alerts…</Text>}
-        {!alerts.isLoading && alerts.alerts.length === 0 && (
+        {!alerts.isLoading && visibleAlerts.length === 0 && (
           <>
             <Ionicons name="alert-circle-outline" size={64} color={colors.textTertiary} />
             <Text style={styles.sub}>No live alerts available right now.</Text>
           </>
         )}
-        {alerts.alerts.map((alert) => (
+        {visibleAlerts.map((alert) => (
           <AlertCard key={alert.id} alert={alert} />
         ))}
       </ScrollView>

@@ -13,7 +13,7 @@ const SEVERITIES: ScamSeverity[] = ['low', 'medium', 'high'];
 export function ReportIncidentScreen() {
   const navigation = useNavigation();
   const { auth, location, scamReports } = useAppContext();
-  const defaultCountryName = location.selectedCountryName ?? 'Thailand';
+  const defaultCountryName = location.selectedCountryName ?? '';
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [countryName, setCountryName] = useState(defaultCountryName);
@@ -77,7 +77,7 @@ export function ReportIncidentScreen() {
         )}
         <Field label="Short title" value={title} onChangeText={setTitle} placeholder="e.g. Driver refused the meter" />
         <Field label="Category" value={category} onChangeText={setCategory} placeholder="e.g. taxi, ATM, fake police" />
-        <Field label="Country" value={countryName} onChangeText={setCountryName} placeholder="e.g. Thailand" />
+        <Field label="Country" value={countryName} onChangeText={setCountryName} placeholder="Select or enter country" />
         <Field label="Area or city" value={localityText} onChangeText={setLocalityText} placeholder="Optional" />
         <View style={styles.field}>
           <Text style={styles.label}>Severity</Text>

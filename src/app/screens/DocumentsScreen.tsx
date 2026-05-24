@@ -9,6 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography } from '@shared/theme';
 import { useAppContext } from '../AppContext';
 import type { DocumentType, TravelDocument } from '@products/bsafe/travel-tools/types';
+import { DateTimePicker } from '../components/DateTimePicker';
 
 const DOC_ICONS: Record<DocumentType, string> = {
   passport: 'document-text',
@@ -56,6 +57,19 @@ function isExpiringSoon(expiryDate?: string): boolean {
 function isExpired(expiryDate?: string): boolean {
   if (!expiryDate) return false;
   return new Date(expiryDate).getTime() < Date.now();
+}
+
+function getExpiryInfo(expiryDate?: string): { label: string; color: string } | null {
+  if (!expiryDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(`${expiryDate}T12:00:00`);
+  const days = Math.ceil((expiry.getTime() - today.getTime()) / 86_400_000);
+  if (days < 0) return { label: 'Expired', color: colors.textTertiary };
+  if (days === 0) return { label: 'Expires today', color: colors.error };
+  if (days < 30) return { label: `Expires in ${days} days`, color: colors.error };
+  if (days <= 90) return { label: `Expires in ${days} days`, color: colors.warning };
+  return { label: `Expires in ${days} days`, color: colors.success };
 }
 
 interface AddDocModalProps {
@@ -117,8 +131,7 @@ function AddDocModal({ visible, onClose, onAdd }: AddDocModalProps) {
           <TextInput style={modal.input} value={title} onChangeText={setTitle} placeholder="e.g. My Passport" placeholderTextColor={colors.placeholder} />
           <Text style={modal.label}>Document Number *</Text>
           <TextInput style={modal.input} value={docNumber} onChangeText={setDocNumber} placeholder="e.g. AB1234567" placeholderTextColor={colors.placeholder} />
-          <Text style={modal.label}>Expiry Date</Text>
-          <TextInput style={modal.input} value={expiry} onChangeText={setExpiry} placeholder="YYYY-MM-DD" placeholderTextColor={colors.placeholder} />
+          <DateTimePicker label="Expiry Date" value={expiry} onChange={setExpiry} placeholder="Select expiry date" mode="date" />
           <Text style={modal.label}>Notes</Text>
           <TextInput style={[modal.input, modal.multiline]} value={notes} onChangeText={setNotes} placeholder="Optional notes..." placeholderTextColor={colors.placeholder} multiline numberOfLines={3} />
           <TouchableOpacity style={modal.addBtn} onPress={handleAdd} disabled={saving}>
@@ -160,8 +173,7 @@ export function DocumentsScreen() {
         keyExtractor={(d) => d.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => {
-          const expired = isExpired(item.expiryDate);
-          const expiring = !expired && isExpiringSoon(item.expiryDate);
+          const expiryInfo = getExpiryInfo(item.expiryDate);
           const iconColor = DOC_COLORS[item.type];
           return (
             <View style={styles.card}>
@@ -171,10 +183,12 @@ export function DocumentsScreen() {
               <View style={styles.info}>
                 <Text style={styles.docTitle}>{item.title}</Text>
                 <Text style={styles.docNum}>{item.documentNumber}</Text>
-                {item.expiryDate && (
-                  <Text style={[styles.expiry, expired && styles.expiryRed, expiring && styles.expiryOrange]}>
-                    {expired ? 'Expired' : expiring ? 'Expiring soon' : `Expires ${item.expiryDate}`}
-                  </Text>
+                {expiryInfo && (
+                  <View style={[styles.expiryBadge, { backgroundColor: expiryInfo.color + '20' }]}>
+                    <Text style={[styles.expiryBadgeText, { color: expiryInfo.color }]}>
+                      {expiryInfo.label}
+                    </Text>
+                  </View>
                 )}
               </View>
               <View style={styles.typeBadge}>
@@ -211,9 +225,8 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   docTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
   docNum: { ...typography.bodySmall, color: colors.textSecondary, fontFamily: 'monospace' },
-  expiry: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
-  expiryRed: { color: colors.error },
-  expiryOrange: { color: colors.warning },
+  expiryBadge: { alignSelf: 'flex-start', borderRadius: 999, marginTop: 4, paddingHorizontal: 8, paddingVertical: 2 },
+  expiryBadgeText: { ...typography.caption, fontWeight: '700' },
   typeBadge: { backgroundColor: colors.brandDark + '15', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   typeText: { ...typography.caption, color: colors.brandDark },
   deleteBtn: { padding: 4 },

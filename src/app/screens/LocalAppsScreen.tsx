@@ -6,6 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography } from '@shared/theme';
+import { useAppContext } from '../AppContext';
+import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -28,6 +30,18 @@ interface AppCategory {
   icon: string;
   color: string;
   apps: AppEntry[];
+}
+
+interface CountryLocalApp {
+  name: string;
+  description: string;
+  icon: string;
+}
+
+interface CountryLocalAppCategory {
+  label: string;
+  color: string;
+  apps: CountryLocalApp[];
 }
 
 const APP_CATEGORIES: AppCategory[] = [
@@ -302,6 +316,175 @@ const APP_CATEGORIES: AppCategory[] = [
   },
 ];
 
+const COUNTRY_LOCAL_APPS: Record<string, CountryLocalAppCategory[]> = {
+  Indonesia: [
+    { label: 'Transport', color: '#2196F3', apps: [
+      { name: 'Gojek', description: 'Ride-hailing, food delivery, payments', icon: 'bicycle' },
+      { name: 'Grab', description: 'Taxi, car, and bike rides', icon: 'car' },
+      { name: 'Bluebird', description: 'Traditional taxi service', icon: 'car-outline' },
+    ] },
+    { label: 'Payments', color: '#009688', apps: [
+      { name: 'GoPay', description: 'Digital wallet by Gojek', icon: 'card' },
+      { name: 'OVO', description: 'Popular e-wallet', icon: 'wallet' },
+      { name: 'Dana', description: 'Digital wallet platform', icon: 'phone-portrait' },
+    ] },
+  ],
+  Thailand: [
+    { label: 'Transport', color: '#2196F3', apps: [
+      { name: 'Grab', description: 'Most popular ride-hailing', icon: 'car' },
+      { name: 'Bolt', description: 'Affordable rides', icon: 'flash' },
+      { name: 'InDrive', description: 'Negotiable fare rides', icon: 'car-sport' },
+    ] },
+    { label: 'Messaging & payments', color: '#4CAF50', apps: [
+      { name: 'LINE', description: 'Most popular local messaging app', icon: 'chatbubbles' },
+      { name: 'PromptPay', description: 'National QR payment system', icon: 'qr-code' },
+      { name: 'TrueMoney', description: 'Digital wallet', icon: 'wallet' },
+    ] },
+  ],
+  Singapore: [
+    { label: 'Local essentials', color: '#4CAF50', apps: [
+      { name: 'Grab', description: 'Dominant ride-hailing and delivery', icon: 'car' },
+      { name: 'ComfortDelGro', description: 'Traditional taxi booking', icon: 'car-outline' },
+      { name: 'SingPass', description: 'Government services and identity', icon: 'business' },
+    ] },
+    { label: 'Payments', color: '#009688', apps: [
+      { name: 'PayNow', description: 'Instant bank transfers', icon: 'card' },
+      { name: 'GrabPay', description: 'Digital wallet', icon: 'wallet' },
+    ] },
+  ],
+  Malaysia: [
+    { label: 'Transport', color: '#2196F3', apps: [
+      { name: 'Grab', description: 'Leading ride-hailing and food delivery', icon: 'car' },
+      { name: 'MyCar', description: 'Local ride service', icon: 'car-sport' },
+    ] },
+    { label: 'Payments', color: '#009688', apps: [
+      { name: "Touch 'n Go", description: 'E-wallet and transit payments', icon: 'card' },
+      { name: 'Boost', description: 'Digital wallet', icon: 'rocket' },
+    ] },
+  ],
+  Japan: [
+    { label: 'Transport', color: '#2196F3', apps: [
+      { name: 'GO Taxi', description: 'Local taxi booking', icon: 'car' },
+      { name: 'Suica', description: 'Transit IC card app', icon: 'train' },
+      { name: 'DiDi', description: 'Ride-hailing service', icon: 'car-sport' },
+    ] },
+    { label: 'Local tools', color: '#9C27B0', apps: [
+      { name: 'LINE', description: 'Most popular messaging app', icon: 'chatbubbles' },
+      { name: 'PayPay', description: 'Leading QR payment app', icon: 'qr-code' },
+      { name: 'Tabelog', description: 'Restaurant reviews', icon: 'restaurant' },
+    ] },
+  ],
+  'South Korea': [
+    { label: 'Local essentials', color: '#4CAF50', apps: [
+      { name: 'KakaoTalk', description: 'National messaging app', icon: 'chatbubble' },
+      { name: 'Kakao T', description: 'Leading taxi app', icon: 'car' },
+      { name: 'Naver Map', description: 'Best local maps', icon: 'map' },
+    ] },
+    { label: 'Payments', color: '#009688', apps: [
+      { name: 'KakaoPay', description: 'Digital wallet leader', icon: 'wallet' },
+      { name: 'Toss', description: 'Mobile banking', icon: 'phone-portrait' },
+    ] },
+  ],
+  China: [
+    { label: 'Super apps', color: '#4CAF50', apps: [
+      { name: 'WeChat', description: 'Messaging, payments, local services', icon: 'chatbubbles' },
+      { name: 'Alipay', description: 'Dominant payment and services app', icon: 'wallet' },
+      { name: 'Meituan', description: 'Food delivery and local services', icon: 'restaurant' },
+    ] },
+    { label: 'Transport', color: '#2196F3', apps: [
+      { name: 'DiDi', description: 'Dominant ride-hailing', icon: 'car' },
+      { name: 'Amap', description: 'Navigation and taxi booking', icon: 'map' },
+    ] },
+  ],
+  India: [
+    { label: 'Transport & food', color: '#FF5722', apps: [
+      { name: 'Ola', description: 'Local ride-hailing leader', icon: 'car' },
+      { name: 'Rapido', description: 'Bike taxi service', icon: 'bicycle' },
+      { name: 'Swiggy', description: 'Leading food delivery', icon: 'restaurant' },
+      { name: 'Zomato', description: 'Food delivery and reviews', icon: 'fast-food' },
+    ] },
+    { label: 'Payments', color: '#009688', apps: [
+      { name: 'Paytm', description: 'Digital wallet and UPI payments', icon: 'wallet' },
+      { name: 'PhonePe', description: 'UPI payments', icon: 'card' },
+    ] },
+  ],
+  France: [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: 'SNCF Connect', description: 'Train booking and live rail updates', icon: 'train' },
+      { name: 'Citymapper', description: 'Urban navigation in major cities', icon: 'map' },
+      { name: 'G7', description: 'Traditional taxi app', icon: 'car' },
+    ] },
+    { label: 'Payments & food', color: '#009688', apps: [
+      { name: 'Lydia', description: 'Mobile payments', icon: 'wallet' },
+      { name: 'Deliveroo', description: 'Restaurant delivery', icon: 'restaurant' },
+    ] },
+  ],
+  Germany: [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: 'DB Navigator', description: 'Train travel and tickets', icon: 'train' },
+      { name: 'FreeNow', description: 'Taxi and ride-hailing', icon: 'car' },
+      { name: 'BlaBlaCar', description: 'Inter-city ridesharing', icon: 'people' },
+    ] },
+    { label: 'Food & payments', color: '#009688', apps: [
+      { name: 'Lieferando', description: 'Leading food delivery', icon: 'pizza' },
+      { name: 'Klarna', description: 'Payments and shopping', icon: 'card' },
+    ] },
+  ],
+  Spain: [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: 'Cabify', description: 'Spanish ride-hailing service', icon: 'car' },
+      { name: 'Renfe', description: 'National train tickets', icon: 'train' },
+      { name: 'Bizum', description: 'Instant bank transfers', icon: 'card' },
+    ] },
+  ],
+  'United Kingdom': [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: 'Trainline', description: 'Train tickets and live rail times', icon: 'train' },
+      { name: 'Citymapper', description: 'Best for London transit', icon: 'map' },
+      { name: 'FreeNow', description: 'Taxi booking in major cities', icon: 'car' },
+    ] },
+  ],
+  'United States': [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: 'Uber', description: 'Ride-hailing in most cities', icon: 'car' },
+      { name: 'Lyft', description: 'Alternative ride-hailing', icon: 'car-sport' },
+      { name: 'Transit', description: 'Public transit in many cities', icon: 'bus' },
+    ] },
+    { label: 'Food & payments', color: '#009688', apps: [
+      { name: 'DoorDash', description: 'Food delivery', icon: 'restaurant' },
+      { name: 'Venmo', description: 'Peer-to-peer payments', icon: 'wallet' },
+    ] },
+  ],
+  Canada: [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: 'Transit', description: 'Public transit in Canadian cities', icon: 'bus' },
+      { name: 'Uber', description: 'Ride-hailing in major cities', icon: 'car' },
+      { name: 'ArriveCAN', description: 'Border and travel declarations', icon: 'document-text' },
+    ] },
+  ],
+  Mexico: [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: 'DiDi', description: 'Popular ride-hailing', icon: 'car' },
+      { name: 'Rappi', description: 'Delivery and local services', icon: 'bag' },
+      { name: 'Mercado Pago', description: 'Digital wallet', icon: 'wallet' },
+    ] },
+  ],
+  Brazil: [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: '99', description: 'Popular ride-hailing', icon: 'car' },
+      { name: 'iFood', description: 'Leading food delivery', icon: 'restaurant' },
+      { name: 'Pix', description: 'Instant payment system', icon: 'qr-code' },
+    ] },
+  ],
+  Australia: [
+    { label: 'Local essentials', color: '#9C27B0', apps: [
+      { name: '13cabs', description: 'Taxi booking', icon: 'car' },
+      { name: 'TripView', description: 'Public transport in major cities', icon: 'train' },
+      { name: 'Beem', description: 'Mobile payments', icon: 'wallet' },
+    ] },
+  ],
+};
+
 type FilterId = 'all' | string;
 
 function AppCard({ app }: { app: AppEntry }) {
@@ -353,7 +536,9 @@ function AppCard({ app }: { app: AppEntry }) {
 
 export function LocalAppsScreen() {
   const navigation = useNavigation();
+  const { location } = useAppContext();
   const [filter, setFilter] = useState<FilterId>('all');
+  const countryApps = location.selectedCountryName ? COUNTRY_LOCAL_APPS[location.selectedCountryName] : undefined;
 
   const visibleCategories = filter === 'all'
     ? APP_CATEGORIES
@@ -367,6 +552,7 @@ export function LocalAppsScreen() {
         </TouchableOpacity>
         <Text style={s.title}>Essential Travel Apps</Text>
       </View>
+      <ViewingLocationBanner />
 
       {/* Category filter chips */}
       <ScrollView
@@ -394,6 +580,42 @@ export function LocalAppsScreen() {
       </ScrollView>
 
       <ScrollView contentContainerStyle={s.scroll}>
+        {countryApps && (
+          <View style={s.countrySection}>
+            <View style={s.countryHeader}>
+              <View style={s.countryIcon}>
+                <Ionicons name="location" size={16} color={colors.brandDark} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.countryTitle}>Also useful in {location.selectedCountryName}</Text>
+                <Text style={s.countrySubtitle}>Country-specific apps from the legacy travel guide.</Text>
+              </View>
+            </View>
+            {countryApps.map((category) => (
+              <View key={category.label} style={s.countryGroup}>
+                <Text style={[s.countryGroupTitle, { color: category.color }]}>{category.label}</Text>
+                <View style={s.localAppsGrid}>
+                  {category.apps.map((app) => (
+                    <View key={`${category.label}-${app.name}`} style={s.localAppPill}>
+                      <View style={[s.localIcon, { backgroundColor: category.color + '18' }]}>
+                        <Ionicons name={app.icon as never} size={16} color={category.color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.localAppName}>{app.name}</Text>
+                        <Text style={s.localAppDesc}>{app.description}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))}
+            <View style={s.offlineTip}>
+              <Ionicons name="download-outline" size={15} color={colors.brandDark} />
+              <Text style={s.offlineTipText}>Install and sign in on Wi-Fi before travelling. Some apps need SMS verification or local payment setup.</Text>
+            </View>
+          </View>
+        )}
+
         {visibleCategories.map((cat) => (
           <View key={cat.id} style={s.section}>
             <View style={s.sectionHeader}>
@@ -424,6 +646,20 @@ const s = StyleSheet.create({
   chipText: { ...typography.caption, color: colors.textTertiary, fontWeight: '600' },
   chipTextActive: { color: colors.brandDark },
   scroll: { padding: spacing.base, gap: spacing.lg, paddingBottom: spacing.xl },
+  countrySection: { backgroundColor: colors.card, borderRadius: 16, padding: spacing.base, gap: spacing.md, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
+  countryHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  countryIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.brandLight + '30', alignItems: 'center', justifyContent: 'center' },
+  countryTitle: { ...typography.h4, color: colors.textPrimary },
+  countrySubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  countryGroup: { gap: spacing.xs },
+  countryGroupTitle: { ...typography.label },
+  localAppsGrid: { gap: spacing.sm },
+  localAppPill: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.background, borderRadius: 12, padding: spacing.sm },
+  localIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  localAppName: { ...typography.bodySmall, color: colors.textPrimary, fontWeight: '700' },
+  localAppDesc: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
+  offlineTip: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs, backgroundColor: colors.brandLight + '20', borderRadius: 10, padding: spacing.sm },
+  offlineTipText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 17 },
   section: { gap: spacing.sm },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   catIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

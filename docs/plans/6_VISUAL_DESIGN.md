@@ -714,7 +714,9 @@ Complete — `@gorhom/bottom-sheet` is installed and `src/shared/ui/` exports th
 - **Do NOT create a `useColors()` hook** — `useTheme()` already exists at `src/shared/hooks/useTheme.ts` and returns the active Colors object. Import it as `import { useTheme } from '@shared/hooks/useTheme'`.
 - `npx tsc --noEmit` + `npx jest` must pass before moving to step 1
 
-### Phase 19 — Home screen redesign
+### ✅ Phase 19 — Home screen redesign
+Complete — Home now uses the wired LocationContext, searchable location sheet, mini map, country alert chip, live widget strip, chat bottom sheet, and staggered quick-action grid.
+
 - Wire `LocationContext` into `AppProviders` — it exists at `src/modules/maps/LocationContext.tsx` but is NOT currently provided in `AppProviders.tsx`. Add it as a provider wrapping `InnerProviders`.
 - `LocationSelectorSheet` — country + city picker as a `BottomSheetModal`, writes to `LocationContext`. First element below the header (Decision V3).
 - `MiniMap` card — shows GPS location if permission granted, else the selected country's capital coordinates. Uses `react-native-maps`.
@@ -730,7 +732,9 @@ Complete — `@gorhom/bottom-sheet` is installed and `src/shared/ui/` exports th
 - Chat entry in header → opens `ChatAppScreen` in a `BottomSheetModal`. The AI chat currently uses `MockChatClient` — swap to `GeminiClient` from `@infra/ai/gemini/`.
 - Animated staggered tile entrance using `react-native-reanimated` (tiles are already on the home screen, just need the animation)
 
-### Phase 20 — Settings screen + UserProfile model
+### ✅ Phase 20 — Settings screen + UserProfile model
+Complete — Settings now has personal profile persistence, default location/currency preferences, appearance and notification toggles, privacy/data links, and currency converter session persistence.
+
 **The audit found the current ProfileScreen is a near-empty stub. This phase is substantially larger than originally scoped.**
 
 - **UserProfile model first** — before touching the UI:
@@ -750,7 +754,9 @@ Complete — `@gorhom/bottom-sheet` is installed and `src/shared/ui/` exports th
 
 - **Emergency screen** — add `Linking.openURL('tel:${number}')` to each country emergency number row (police, ambulance, fire). Currently display-only — this is a critical UX gap for an emergency safety app.
 
-### Phase 21 — Trips + Documents polish
+### ✅ Phase 21 — Trips + Documents polish
+Complete — Trips now have country picker/date-time inputs, calendar tab, flags, trip map section, total cost, document expiry badges/date picker, and safe-zone directions/call actions.
+
 - Country field on `AddTripModal` upgraded to `LocationSelectorSheet` (country only)
 - Country flag shown on trip list cards and `TripDetails` header (use flag emoji from country data)
 - Calendar tab added to `TripsScreen` using `react-native-calendars`
@@ -762,7 +768,9 @@ Complete — `@gorhom/bottom-sheet` is installed and `src/shared/ui/` exports th
 - **Documents** — upgrade expiry display to "Expires in X days" with colour-coded badge (green >90d, orange 30–90d, red <30d, grey = expired). Replace raw `YYYY-MM-DD` text input with `DateTimePicker`.
 - **Safe zones** — add "Directions" (`Linking.openURL('maps://...')`) and "Call" (`Linking.openURL('tel:...')`) action buttons to each police/embassy card (legacy: `bsafe/src/screens/safety/SafeZonesScreen.tsx`)
 
-### Phase 22 — Country context propagation + screen polish
+### Phase 22 — Country context propagation + screen polish ✅
+> As built: `ViewingLocationBanner` component added; all 7 location-sensitive screens consume `LocationContext` via `useLocation()`; `ScamAlertsScreen` has bookmark (AsyncStorage `@be5afe_scam_bookmarks`) + Bookmarked filter + Share; `WeatherScreen` shows travel recommendation card and packing suggestions; `LocalAppsScreen` shows country-specific apps section when country selected. `npx tsc --noEmit` and `npx jest --watchman=false` both pass (91/91).
+
 - All location-sensitive screens read from `LocationContext` rather than hardcoded defaults: `ScamAlerts`, `LiveAlerts`, `Emergency`, `Weather`, `CountrySafety`, `HealthGuide`, `LocalLaws`
 - Add a subtle "Viewing: Thailand 🇹🇭" indicator row on each of these screens
 - Replace hardcoded `countryName = 'Thailand'` default throughout with `location?.countryId ?? null` and a "Select a country" prompt if not set

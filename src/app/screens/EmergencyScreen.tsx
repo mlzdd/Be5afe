@@ -7,14 +7,15 @@ import { colors, spacing, typography } from '@shared/theme';
 import { useAppContext } from '../AppContext';
 import { countryEmergencyNumbers } from '@products/bsafe/emergency';
 import type { EmergencyContact } from '@products/bsafe/emergency/types';
+import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
 
 export function EmergencyScreen() {
   const navigation = useNavigation();
   const { emergency, location } = useAppContext();
   const [addingContact, setAddingContact] = useState(false);
 
-  const countryName = location.selectedCountryName ?? 'United States';
-  const numbers = countryEmergencyNumbers[countryName] ?? countryEmergencyNumbers['United States'];
+  const countryName = location.selectedCountryName;
+  const numbers = countryName ? countryEmergencyNumbers[countryName] : null;
 
   const call = (number: string) => {
     Linking.openURL(`tel:${number}`).catch(() => Alert.alert('Cannot dial', number));
@@ -36,9 +37,12 @@ export function EmergencyScreen() {
         <Text style={styles.title}>Emergency</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
+        <ViewingLocationBanner />
         {/* Country emergency numbers */}
-        <Text style={styles.section}>Emergency Numbers — {countryName}</Text>
-        {[
+        <Text style={styles.section}>Emergency Numbers{countryName ? ` — ${countryName}` : ''}</Text>
+        {!countryName || !numbers ? (
+          <Text style={styles.empty}>Select a country to show local emergency numbers.</Text>
+        ) : [
           { label: 'Police', number: numbers.police, icon: 'shield', color: '#2196F3' },
           { label: 'Ambulance', number: numbers.ambulance, icon: 'medical', color: '#F44336' },
           { label: 'Fire', number: numbers.fire, icon: 'flame', color: '#FF9800' },

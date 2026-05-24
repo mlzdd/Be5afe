@@ -130,44 +130,59 @@ The app boots cleanly without credentials — Firebase-backed features degrade g
 
 ## Current build status
 
-**Phases 1–18 complete** (app phases). **91 tests, 19 suites, all passing.**
+**Phases 1–22 complete** (app + visual phases). **91 tests, 19 suites, all passing.**
 
 See `MODULAR_APP_PLAN_PHASES_AS_BUILT.md` for the full phase-by-phase record of what was built, key decisions made, and bugs fixed. This is the authoritative source for "why does X work this way."
+
+### App wiring facts (Phases 19–22 additions)
+
+- **Selected location** is persisted via `HybridLocationRepository` (`@infra/location/HybridLocationRepository.ts`) — Firestore for auth users, AsyncStorage for guests. `AppContext.location` now includes `countryId`, `countryName`, `cityId`, `cityName`.
+- **`LocationContext`** (`src/modules/maps/LocationContext.tsx`) is wired into `AppProviders.tsx`. All location-sensitive screens consume it via `useLocation()`.
+- **`ViewingLocationBanner`** (`src/app/components/ViewingLocationBanner.tsx`) is a shared indicator row used by 7 screens.
+- **User profile/preferences** wiring: `UserPreferencesContext` manages `themeMode`, `globalCurrency`, `notifications`, `language`. `UserProfileContext` (`src/modules/user-profile/`) manages display name, avatar, home country — persisted via `HybridUserProfileRepository` (`@infra/profile/`).
+- **`@gorhom/bottom-sheet` v5** is installed. Chat on Home is a BottomSheetModal.
+- **`@react-native-community/datetimepicker`** and **`react-native-calendars`** are installed (added Phase 21).
+- **Scam bookmarks** stored in AsyncStorage key `@be5afe_scam_bookmarks`.
 
 ### What is built and working
 
 | Area | Status |
 |---|---|
 | Auth (Firebase + guest mode) | ✅ |
-| Home screen with 15 quick-action tiles | ✅ |
-| Trips — full CRUD, add/edit flow, itinerary, bookings | ✅ |
-| Emergency contacts + country numbers | ✅ |
-| Scam alerts (static data + Firestore seeded) + Reported tier rendering | ✅ |
+| Home screen — LocationSelectorSheet, MiniMap, AlertCountChip, WidgetStrip, animated tiles, Chat bottom sheet | ✅ |
+| Trips — full CRUD, add/edit flow, itinerary, bookings, calendar view, map section | ✅ |
+| Emergency contacts + country numbers + tel: links | ✅ |
+| Scam alerts — Firestore seeded, Reported tier, bookmarks, Bookmarked filter, share | ✅ |
 | ScamReport submission flow (mobile) | ✅ |
-| Live alert feeds (FCDO + State Dept, Firestore-backed) | ✅ |
-| Country safety + details + local laws | ✅ |
+| Live alert feeds (FCDO + State Dept, Firestore-backed, location-filtered) | ✅ |
+| Country safety + details + local laws (location context) | ✅ |
 | Guides screen (safety / scams / tips tabs) | ✅ |
-| Health guide (general + per-country) | ✅ |
-| Local apps directory | ✅ |
+| Health guide (general + per-country, location context) | ✅ |
+| Local apps directory + country-specific supplement | ✅ |
 | Map tab (Places API, category filter) | ✅ |
 | Nearest hospital (map + list) | ✅ |
-| Safe zones (police + embassy map) | ✅ |
-| Weather (Open-Meteo, GPS auto-locate, 7-day) | ✅ |
-| Currency converter | ✅ |
+| Safe zones (police + embassy map + directions/call actions) | ✅ |
+| Weather (Open-Meteo, GPS auto-locate, 7-day, travel recommendation, packing suggestions) | ✅ |
+| Currency converter (global currency preference) | ✅ |
 | Packing list | ✅ |
-| Travel documents | ✅ |
+| Travel documents + expiry badge + DateTimePicker | ✅ |
 | Emergency medical card | ✅ |
 | Friends + social (Firestore) | ✅ |
 | Groups + group chat (Firestore) | ✅ |
-| Widgets dashboard | ✅ |
-| Chat (Gemini AI) | ✅ |
+| Widgets dashboard (6 widget types, AppContext-connected) | ✅ |
+| Chat (Gemini AI, bottom sheet on Home) | ✅ |
+| Settings — 5 sections, UserProfile model, global currency, theme, notifications | ✅ |
 | Error boundary + loading states | ✅ |
 | Firestore data seeded (32 countries, 54 scams) | ✅ |
+| ViewingLocationBanner on all location-sensitive screens | ✅ |
 
 ### What remains — app phases
 
 | Area | Status | Notes |
 |---|---|---|
+| PORT: LocationSharingScreen, ExpensesScreen, TouristSpotsScreen | ⏳ | See 6_VISUAL_DESIGN.md |
+| DECIDE: eSIM (affiliate), Insurance (document store) | ⏳ | See 6_VISUAL_DESIGN.md |
+| NEW: Onboarding, SOS/panic, Global search | ⏳ | See 6_VISUAL_DESIGN.md |
 | App Store build (EAS, icons, splash) | ⏳ | Needs Apple/Google dev accounts |
 
 ### Data pipeline phases (D1–D9) — see `docs/plans/5_DATA_PLAN_AS_BUILT.md` for full detail

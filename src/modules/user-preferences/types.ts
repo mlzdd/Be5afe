@@ -11,6 +11,12 @@ export interface Currency {
 export interface UserPreferences {
   themeMode: ThemeMode;
   displayCurrency: Currency;
+  defaultCountryId: string | null;
+  defaultCityId: string | null;
+  notifications: {
+    general: boolean;
+    criticalSafety: boolean;
+  };
   locale: string; // BCP-47, e.g. 'en-AU'
 }
 
@@ -24,5 +30,11 @@ export const DEFAULT_CURRENCY: Currency = {
 export const DEFAULT_PREFERENCES: UserPreferences = {
   themeMode: 'system',
   displayCurrency: DEFAULT_CURRENCY,
+  defaultCountryId: null,
+  defaultCityId: null,
+  notifications: {
+    general: true,
+    criticalSafety: true,
+  },
   locale: 'en-US',
 };

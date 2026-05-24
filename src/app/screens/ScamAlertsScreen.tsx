@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Share } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -8,22 +9,44 @@ import { useAppContext } from '../AppContext';
 import { countryScams } from '@products/bsafe/safety-data';
 import type { ScamReport } from '@products/bsafe/scam-reports';
 import { getCountryByName } from '@modules/regional-data/lookup';
+import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
+
+const BOOKMARKS_KEY = '@be5afe_scam_bookmarks';
 
 export function ScamAlertsScreen() {
   const navigation = useNavigation();
   const { location, scamReports } = useAppContext();
   const [search, setSearch] = useState('');
+  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
 
-  const countryName = location.selectedCountryName ?? 'Thailand';
-  const scams = countryScams[countryName] ?? [];
-  const country = getCountryByName(countryName);
+  const countryName = location.selectedCountryName;
+  const scams = countryName ? countryScams[countryName] ?? [] : [];
+  const country = countryName ? getCountryByName(countryName) : undefined;
   const visibleReports = scamReports.reports.filter((report) => report.countryId === country?.iso2);
+
+  useEffect(() => {
+    AsyncStorage.getItem(BOOKMARKS_KEY).then((raw) => {
+      setBookmarks(new Set(raw ? JSON.parse(raw) as string[] : []));
+    }).catch(() => {});
+  }, []);
+
+  const toggleBookmark = (id: string) => {
+    setBookmarks((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(Array.from(next))).catch(() => {});
+      return next;
+    });
+  };
 
   const filtered = useMemo(() =>
     scams.filter((s) =>
-      !search || s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.description.toLowerCase().includes(search.toLowerCase()),
-    ), [scams, search]);
+      (!bookmarkedOnly || bookmarks.has(bookmarkId(countryName, s.title))) &&
+      (!search || s.title.toLowerCase().includes(search.toLowerCase()) ||
+      s.description.toLowerCase().includes(search.toLowerCase())),
+    ), [scams, search, bookmarkedOnly, bookmarks, countryName]);
   const filteredReports = useMemo(
     () =>
       visibleReports.filter(
@@ -50,20 +73,37 @@ export function ScamAlertsScreen() {
         <Ionicons name="search" size={18} color={colors.textTertiary} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder={`Search scams in ${countryName}...`}
+          placeholder={countryName ? `Search scams in ${countryName}...` : 'Search scam alerts...'}
           value={search}
           onChangeText={setSearch}
           placeholderTextColor={colors.placeholder}
         />
       </View>
+      <ViewingLocationBanner />
       <ScrollView contentContainerStyle={styles.scroll}>
         <TouchableOpacity style={styles.reportButton} onPress={() => navigation.navigate('ReportIncident' as never)}>
           <Ionicons name="add-circle-outline" size={18} color={colors.brandDark} />
           <Text style={styles.reportButtonText}>Report a scam</Text>
         </TouchableOpacity>
-        <Text style={styles.sub}>{filtered.length + filteredReports.length} alerts for {countryName}</Text>
+        <View style={styles.filterRow}>
+          <TouchableOpacity
+            style={[styles.filterChip, !bookmarkedOnly && styles.filterChipActive]}
+            onPress={() => setBookmarkedOnly(false)}
+          >
+            <Text style={[styles.filterText, !bookmarkedOnly && styles.filterTextActive]}>All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, bookmarkedOnly && styles.filterChipActive]}
+            onPress={() => setBookmarkedOnly(true)}
+          >
+            <Text style={[styles.filterText, bookmarkedOnly && styles.filterTextActive]}>Bookmarked</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.sub}>
+          {countryName ? `${filtered.length + filteredReports.length} alerts for ${countryName}` : 'Select a country to show scam alerts'}
+        </Text>
         {filtered.map((scam, i) => (
-          <View key={i} style={styles.card}>
+          <View key={`${countryName}-${scam.title}`} style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.scamTitle}>{scam.title}</Text>
               <View style={[styles.badge, { backgroundColor: severityColor(scam.severity) + '20' }]}>
@@ -74,6 +114,23 @@ export function ScamAlertsScreen() {
             <View style={styles.tip}>
               <Ionicons name="shield-checkmark" size={14} color={colors.success} />
               <Text style={styles.tipText}>{scam.prevention}</Text>
+            </View>
+            <View style={styles.actionRow}>
+              <TouchableOpacity onPress={() => toggleBookmark(bookmarkId(countryName, scam.title))} style={styles.cardAction}>
+                <Ionicons
+                  name={bookmarks.has(bookmarkId(countryName, scam.title)) ? 'star' : 'star-outline'}
+                  size={16}
+                  color={colors.warning}
+                />
+                <Text style={styles.cardActionText}>Bookmark</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => Share.share({ message: `${scam.title}\n\n${scam.description}\n\nPrevention: ${scam.prevention}` })}
+                style={styles.cardAction}
+              >
+                <Ionicons name="share-outline" size={16} color={colors.brandDark} />
+                <Text style={styles.cardActionText}>Share</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ))}
@@ -86,6 +143,10 @@ export function ScamAlertsScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function bookmarkId(countryName: string | null, title: string): string {
+  return `${countryName ?? 'unknown'}:${title}`;
 }
 
 function ReportedCard({ report }: { report: ScamReport }) {
@@ -116,6 +177,11 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, ...typography.body, color: colors.textPrimary, paddingVertical: spacing.md },
   scroll: { padding: spacing.base, paddingBottom: spacing.xl },
   sub: { ...typography.bodySmall, color: colors.textSecondary, marginBottom: spacing.md },
+  filterRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  filterChip: { borderRadius: 999, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  filterChipActive: { backgroundColor: colors.brandDark, borderColor: colors.brandDark },
+  filterText: { ...typography.caption, color: colors.textSecondary },
+  filterTextActive: { color: colors.textInverse, fontWeight: '700' },
   reportButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -147,5 +213,8 @@ const styles = StyleSheet.create({
   reportedMeta: { ...typography.caption, color: colors.warning, fontWeight: '700' },
   tip: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
   tipText: { ...typography.caption, color: colors.textSecondary, flex: 1 },
+  actionRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  cardAction: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.brandDark + '10', borderRadius: 999, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  cardActionText: { ...typography.caption, color: colors.brandDark, fontWeight: '700' },
   empty: { ...typography.body, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xl },
 });

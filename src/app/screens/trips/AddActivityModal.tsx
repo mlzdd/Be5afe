@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '@shared/theme';
 import { getCategoryIcon } from '@products/bsafe/trips/tripUtils';
 import type { Activity } from '@products/bsafe/trips/types';
+import { DateTimePicker } from '../../components/DateTimePicker';
 
 type Category = Activity['category'];
 
@@ -93,13 +94,7 @@ export function AddActivityModal({ visible, dayDate, onClose, onAdd }: Props) {
             />
           </View>
 
-          <View style={s.field}>
-            <Text style={s.label}>Time *</Text>
-            <TextInput
-              style={s.input} value={time} onChangeText={setTime}
-              placeholder="e.g. 09:00" placeholderTextColor={colors.placeholder}
-            />
-          </View>
+          <DateTimePicker label="Time *" value={time} onChange={setTime} placeholder="Select time" mode="time" />
 
           <View style={s.field}>
             <Text style={s.label}>Category</Text>

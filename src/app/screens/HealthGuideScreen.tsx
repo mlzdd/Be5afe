@@ -6,6 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography } from '@shared/theme';
+import { useAppContext } from '../AppContext';
+import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 
@@ -318,12 +320,15 @@ function CountryCard({ entry }: { entry: CountryHealth }) {
 
 export function HealthGuideScreen() {
   const navigation = useNavigation();
+  const { location } = useAppContext();
   const [mode, setMode] = useState<ViewMode>('general');
   const [query, setQuery] = useState('');
 
-  const filtered = query
+  const filtered = (query
     ? COUNTRY_HEALTH.filter((c) => c.country.toLowerCase().includes(query.toLowerCase()))
-    : COUNTRY_HEALTH;
+    : COUNTRY_HEALTH)
+    .sort((a, b) =>
+      a.country === location.selectedCountryName ? -1 : b.country === location.selectedCountryName ? 1 : 0);
 
   return (
     <SafeAreaView style={s.safe}>
@@ -333,6 +338,7 @@ export function HealthGuideScreen() {
         </TouchableOpacity>
         <Text style={s.title}>Health Guide</Text>
       </View>
+      <ViewingLocationBanner />
 
       {/* Mode toggle */}
       <View style={s.toggle}>

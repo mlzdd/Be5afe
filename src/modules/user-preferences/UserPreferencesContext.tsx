@@ -10,6 +10,8 @@ interface UserPreferencesContextValue {
   isLoaded: boolean;
   setThemeMode: (mode: ThemeMode) => void;
   setDisplayCurrency: (currency: Currency) => void;
+  setDefaultLocation: (countryId: string | null, cityId: string | null) => void;
+  setNotifications: (notifications: UserPreferences['notifications']) => void;
   setLocale: (locale: string) => void;
 }
 
@@ -51,6 +53,22 @@ export function UserPreferencesProvider({ children }: Props) {
     });
   }, []);
 
+  const setDefaultLocation = useCallback((countryId: string | null, cityId: string | null) => {
+    setPreferences((prev) => {
+      const next = { ...prev, defaultCountryId: countryId, defaultCityId: cityId };
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const setNotifications = useCallback((notifications: UserPreferences['notifications']) => {
+    setPreferences((prev) => {
+      const next = { ...prev, notifications };
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, []);
+
   const setLocale = useCallback((locale: string) => {
     setPreferences((prev) => {
       const next = { ...prev, locale };
@@ -61,7 +79,15 @@ export function UserPreferencesProvider({ children }: Props) {
 
   return (
     <UserPreferencesContext.Provider
-      value={{ preferences, isLoaded, setThemeMode, setDisplayCurrency, setLocale }}
+      value={{
+        preferences,
+        isLoaded,
+        setThemeMode,
+        setDisplayCurrency,
+        setDefaultLocation,
+        setNotifications,
+        setLocale,
+      }}
     >
       {children}
     </UserPreferencesContext.Provider>

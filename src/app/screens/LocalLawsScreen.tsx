@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { colors, spacing, typography } from '@shared/theme';
 import type { RootStackParamList } from '../navigation/types';
+import { useAppContext } from '../AppContext';
+import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
 
 type Route = RouteProp<RootStackParamList, 'LocalLaws'>;
 
@@ -130,7 +132,8 @@ const DEFAULT_LAWS: CountryLaws = {
 export function LocalLawsScreen() {
   const navigation = useNavigation();
   const route = useRoute<Route>();
-  const countryName = route.params?.countryName ?? '';
+  const { location } = useAppContext();
+  const countryName = route.params?.countryName ?? location.selectedCountryName ?? '';
   const [query, setQuery] = useState(countryName);
 
   const laws = useMemo(() => {
@@ -149,6 +152,7 @@ export function LocalLawsScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Local Laws & Customs</Text>
       </View>
+      <ViewingLocationBanner />
 
       <View style={styles.searchRow}>
         <Ionicons name="globe-outline" size={18} color={colors.textTertiary} />

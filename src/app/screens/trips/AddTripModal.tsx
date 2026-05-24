@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
   ScrollView, StyleSheet, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import BottomSheet from '@gorhom/bottom-sheet';
 import { colors, spacing, typography } from '@shared/theme';
 import type { Trip } from '@products/bsafe/trips/types';
+import { DateTimePicker } from '../../components/DateTimePicker';
+import { LocationSelectorSheet } from '../../components/LocationSelectorSheet';
+import { getCountryById } from '@modules/regional-data';
 
 interface Props {
   visible: boolean;
@@ -19,6 +23,7 @@ function isValidDate(s: string): boolean {
 }
 
 export function AddTripModal({ visible, onClose, onAdd }: Props) {
+  const locationSheetRef = useRef<BottomSheet>(null);
   const [destination, setDestination] = useState('');
   const [country, setCountry] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -58,14 +63,30 @@ export function AddTripModal({ visible, onClose, onAdd }: Props) {
         </View>
         <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
           <Field label="Destination *" value={destination} onChangeText={setDestination} placeholder="e.g. Bangkok" />
-          <Field label="Country *" value={country} onChangeText={setCountry} placeholder="e.g. Thailand" />
-          <Field label="Start date *" value={startDate} onChangeText={setStartDate} placeholder="YYYY-MM-DD" />
-          <Field label="End date *" value={endDate} onChangeText={setEndDate} placeholder="YYYY-MM-DD" />
+          <View style={s.field}>
+            <Text style={s.label}>Country *</Text>
+            <TouchableOpacity style={s.inputButton} onPress={() => locationSheetRef.current?.expand()}>
+              <Text style={[s.inputButtonText, !country && { color: colors.placeholder }]}>
+                {country || 'Select country'}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <DateTimePicker label="Start date *" value={startDate} onChange={setStartDate} placeholder="Select start date" mode="date" />
+          <DateTimePicker label="End date *" value={endDate} onChange={setEndDate} placeholder="Select end date" mode="date" />
           <Field label="Notes" value={notes} onChangeText={setNotes} placeholder="Optional notes about the trip" multiline />
           <TouchableOpacity style={s.btn} onPress={handleAdd} disabled={saving}>
             <Text style={s.btnText}>{saving ? 'Saving…' : 'Add Trip'}</Text>
           </TouchableOpacity>
         </ScrollView>
+        <LocationSelectorSheet
+          ref={locationSheetRef}
+          onLocationSelect={(countryId) => {
+            const selected = getCountryById(countryId as never);
+            if (selected) setCountry(selected.name);
+          }}
+          onSelect={() => locationSheetRef.current?.close()}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -96,6 +117,8 @@ const s = StyleSheet.create({
   field: { gap: 6 },
   label: { ...typography.label, color: colors.textSecondary },
   input: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: spacing.md, ...typography.body, color: colors.textPrimary, backgroundColor: colors.inputBackground },
+  inputButton: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: spacing.md, backgroundColor: colors.inputBackground, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  inputButtonText: { ...typography.body, color: colors.textPrimary },
   multiline: { height: 80, textAlignVertical: 'top' },
   btn: { backgroundColor: colors.brandDark, borderRadius: 12, padding: spacing.base, alignItems: 'center', marginTop: spacing.sm },
   btnText: { ...typography.button, color: colors.textInverse },

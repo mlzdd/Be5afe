@@ -11,6 +11,7 @@ import type { useMedicalCard } from '@products/bsafe/travel-tools/useMedicalCard
 import type { useLocationSharing } from '@modules/social/useLocationSharing';
 import type { useAlerts } from '@products/bsafe/alerts/useAlerts';
 import type { useScamReports } from '@products/bsafe/scam-reports/useScamReports';
+import type { useUserProfile } from '@modules/user-profile/useUserProfile';
 
 type TripsState = ReturnType<typeof useTrips>;
 type EmergencyState = ReturnType<typeof useEmergency>;
@@ -23,6 +24,7 @@ type MedicalCardState = ReturnType<typeof useMedicalCard>;
 type LocationSharingState = ReturnType<typeof useLocationSharing>;
 type AlertsState = ReturnType<typeof useAlerts>;
 type ScamReportsState = ReturnType<typeof useScamReports>;
+type UserProfileState = ReturnType<typeof useUserProfile>;
 
 export interface TravelToolsContext {
   documents: DocumentsState['documents'];
@@ -53,12 +55,15 @@ export interface AppAuthContext {
 
 // Location context exposed to screens
 export interface AppLocationContext {
+  selectedCountryId: string | null;
   selectedCountryName: string | null;
+  selectedCityId: string | null;
   selectedCityName: string | null;
 }
 
 export interface AppContextValue {
   auth: AppAuthContext;
+  userProfile: UserProfileState;
   location: AppLocationContext;
   trips: TripsState;
   emergency: EmergencyState;

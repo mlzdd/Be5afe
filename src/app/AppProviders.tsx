@@ -6,6 +6,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from '@shared/theme';
 import { useAuth, AuthProvider } from '@modules/auth/AuthContext';
 import { UserPreferencesProvider, useUserPreferences } from '@modules/user-preferences/UserPreferencesContext';
+import { LocationProvider, useLocation } from '@modules/maps';
+import { getCityById, getCountryById } from '@modules/regional-data';
+import { useUserProfile } from '@modules/user-profile';
 
 // Hooks
 import { useTrips } from '@products/bsafe/trips/useTrips';
@@ -26,6 +29,8 @@ import { FirestoreTripsRepository } from '@infra/trips/firestore/FirestoreTripsR
 import { AsyncStorageEmergencyRepository } from '@infra/emergency/asyncstorage/AsyncStorageEmergencyRepository';
 import { FirestoreFriendsRepository, FirestoreGroupsRepository, FirestoreLocationSharingRepository } from '@infra/social/firestore';
 import { ExpoLocationService } from '@infra/location/expo/ExpoLocationService';
+import { HybridLocationRepository } from '@infra/location/HybridLocationRepository';
+import { HybridUserProfileRepository } from '@infra/profile/HybridUserProfileRepository';
 import { FirestoreAlertRepository, FirestoreScamReportRepository } from '@infra/realtime/firestore';
 import { HybridMedicalCardRepository, HybridPackingListRepository } from '@infra/travel-tools';
 
@@ -43,6 +48,8 @@ const emergencyRepo = new AsyncStorageEmergencyRepository();
 const friendsRepo = new FirestoreFriendsRepository();
 const groupsRepo = new FirestoreGroupsRepository();
 const locationSharingRepo = new FirestoreLocationSharingRepository();
+const locationRepo = new HybridLocationRepository();
+const userProfileRepo = new HybridUserProfileRepository();
 const gpsService = new ExpoLocationService();
 const alertsRepo = new FirestoreAlertRepository();
 const scamReportsRepo = new FirestoreScamReportRepository();
@@ -52,8 +59,11 @@ const medicalCardRepo = new HybridMedicalCardRepository();
 function InnerProviders({ children }: { children: ReactNode }) {
   const { session, signOut } = useAuth();
   const { preferences } = useUserPreferences();
+  const selectedLocation = useLocation();
 
   const user = session.kind === 'authenticated' ? session.user : null;
+  const selectedCountry = selectedLocation.location ? getCountryById(selectedLocation.location.countryId) : undefined;
+  const selectedCity = selectedLocation.location ? getCityById(selectedLocation.location.cityId) : undefined;
 
   const trips = useTrips(tripsRepo, user);
   const emergency = useEmergency(emergencyRepo, user);
@@ -66,6 +76,7 @@ function InnerProviders({ children }: { children: ReactNode }) {
   const medicalCard = useMedicalCard(medicalCardRepo, user);
   const alerts = useAlerts(alertsRepo);
   const scamReports = useScamReports(scamReportsRepo, user);
+  const userProfile = useUserProfile(userProfileRepo, user);
 
   useEffect(() => {
     void runContentSync();
@@ -73,7 +84,13 @@ function InnerProviders({ children }: { children: ReactNode }) {
 
   const ctx: AppContextValue = {
     auth: { user, signOut },
-    location: { selectedCountryName: null, selectedCityName: null },
+    userProfile,
+    location: {
+      selectedCountryId: selectedCountry?.id ?? null,
+      selectedCountryName: selectedCountry?.name ?? null,
+      selectedCityId: selectedCity?.id ?? null,
+      selectedCityName: selectedCity?.name ?? null,
+    },
     trips,
     emergency,
     friends,
@@ -113,6 +130,26 @@ function InnerProviders({ children }: { children: ReactNode }) {
   );
 }
 
+function LocationScopedProviders({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
+  const { preferences } = useUserPreferences();
+  const userId = session.kind === 'authenticated' ? session.user.uid : 'guest';
+
+  return (
+    <LocationProvider
+      repository={locationRepo}
+      gpsService={gpsService}
+      userId={userId}
+      defaultLocation={{
+        countryId: preferences.defaultCountryId,
+        cityId: preferences.defaultCityId,
+      }}
+    >
+      {children}
+    </LocationProvider>
+  );
+}
+
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary>
@@ -120,9 +157,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
         <SafeAreaProvider>
           <AuthProvider repository={authRepo}>
             <UserPreferencesProvider>
-              <InnerProviders>
-                {children}
-              </InnerProviders>
+              <LocationScopedProviders>
+                <InnerProviders>
+                  {children}
+                </InnerProviders>
+              </LocationScopedProviders>
             </UserPreferencesProvider>
           </AuthProvider>
         </SafeAreaProvider>
