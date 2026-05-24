@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +20,7 @@ import { AlertCountChip } from '../components/AlertCountChip';
 import { LocationSelectorSheet } from '../components/LocationSelectorSheet';
 import { MiniMap } from '../components/MiniMap';
 import { WidgetStrip } from '../components/WidgetStrip';
+import { NudgeStrip } from '../components/NudgeStrip';
 import { BottomSheetModal, Card, SectionHeader } from '@shared/ui';
 import { useTheme } from '@shared/hooks/useTheme';
 import { radius, spacing, typography } from '@shared/theme';
@@ -44,6 +45,7 @@ export function HomeScreen() {
   const { location } = useLocation();
   const locationSheetRef = useRef<BottomSheet>(null);
   const chatSheetRef = useRef<BottomSheet>(null);
+  const [showMoreTools, setShowMoreTools] = useState(false);
   const chatClient = useMemo(() => createChatClient(), []);
 
   const countryName = appLocation.selectedCountryName ?? 'Select a country';
@@ -138,6 +140,8 @@ export function HomeScreen() {
             onPress={() => navigation.navigate('LiveAlerts')}
           />
 
+          <NudgeStrip />
+
           <View>
             <SectionHeader
               title="Widgets"
@@ -149,7 +153,7 @@ export function HomeScreen() {
           <View>
             <SectionHeader title="Quick actions" />
             <View style={styles.grid}>
-              {quickActions.map((action, index) => (
+              {quickActions.slice(0, 15).map((action, index) => (
                 <AnimatedQuickActionTile
                   key={action.label}
                   action={action}
@@ -157,6 +161,30 @@ export function HomeScreen() {
                 />
               ))}
             </View>
+            {quickActions.length > 15 && (
+              <>
+                <TouchableOpacity
+                  onPress={() => setShowMoreTools((v) => !v)}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.sm, gap: 4 }}
+                >
+                  <Text style={{ ...typography.caption, color: colors.textSecondary, fontWeight: '600' }}>
+                    {showMoreTools ? 'Less tools' : `More tools (${quickActions.length - 15})`}
+                  </Text>
+                  <Ionicons name={showMoreTools ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textSecondary} />
+                </TouchableOpacity>
+                {showMoreTools && (
+                  <View style={styles.grid}>
+                    {quickActions.slice(15).map((action, index) => (
+                      <AnimatedQuickActionTile
+                        key={action.label}
+                        action={action}
+                        index={index + 15}
+                      />
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>

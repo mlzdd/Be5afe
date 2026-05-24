@@ -120,7 +120,7 @@ export function LocationSharingScreen() {
   const { location } = useLocation();
   const [showCreate, setShowCreate] = useState(false);
 
-  const coords = location?.coordinates ?? { lat: 37.7749, lng: -122.4194 };
+  const coords = location?.coordinates ?? null;
   const acceptedFriends = friends.friends.filter((f) => f.status === 'accepted');
 
   async function handleCreate(duration: ShareDuration) {
@@ -294,26 +294,37 @@ export function LocationSharingScreen() {
                 <Text style={s.locationTitle}>Your Current Location</Text>
               </View>
               <View style={s.map}>
-                <MapView
-                  provider={PROVIDER_GOOGLE}
-                  style={{ flex: 1 }}
-                  region={{
-                    latitude: coords.lat,
-                    longitude: coords.lng,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  scrollEnabled={false}
-                  zoomEnabled={false}
-                  pitchEnabled={false}
-                  rotateEnabled={false}
-                >
-                  <Marker coordinate={{ latitude: coords.lat, longitude: coords.lng }}>
-                    <View style={s.markerDot} />
-                  </Marker>
-                </MapView>
+                {coords ? (
+                  <MapView
+                    provider={PROVIDER_GOOGLE}
+                    style={{ flex: 1 }}
+                    region={{
+                      latitude: coords.lat,
+                      longitude: coords.lng,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
+                    }}
+                    scrollEnabled={false}
+                    zoomEnabled={false}
+                    pitchEnabled={false}
+                    rotateEnabled={false}
+                  >
+                    <Marker coordinate={{ latitude: coords.lat, longitude: coords.lng }}>
+                      <View style={s.markerDot} />
+                    </Marker>
+                  </MapView>
+                ) : (
+                  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.inputBackground }}>
+                    <Ionicons name="location-outline" size={28} color={colors.textTertiary} />
+                    <Text style={{ ...typography.caption, color: colors.textTertiary, marginTop: 6, textAlign: 'center', paddingHorizontal: 16 }}>
+                      Set a destination on Home to see your location
+                    </Text>
+                  </View>
+                )}
               </View>
-              <Text style={s.locationSub}>Updated just now</Text>
+              <Text style={s.locationSub}>
+                {coords ? 'GPS location' : 'Location unavailable'}
+              </Text>
             </View>
 
             <Text style={s.sectionTitle}>

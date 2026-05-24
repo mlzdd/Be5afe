@@ -840,15 +840,23 @@ Status key: **Port** = existed in legacy, needs porting | **New** = never existe
 
 ---
 
-### NEW — SOS / panic flow
-> **Status: Not yet built.** Still needed — see spec above.
-
-The hold gesture uses `react-native-reanimated`. All data plumbing (GPS, friends, groups, emergency numbers) exists in `AppContext`. Estimated 4–6 hours.
+### NEW — SOS / panic flow ✅
+> As built: `SOSButton` component added to `EmergencyScreen`. Hold-to-activate (3s) using `react-native-reanimated` + `GestureDetector`. On activation: requests GPS, posts SOS message to all groups, shows confirmation modal with who was notified and GPS coords status. Animated fill ring around red button. No auto-dial.
 
 ---
 
 ### NEW — Global search ✅
 > As built: `GlobalSearchScreen.tsx` — searches countries (`getAllCountries()`), static scam patterns (`countryScams`), live alerts (AppContext). Grouped results by type with section headers. Accessible from search icon in Home header.
+
+---
+
+### REVIEW — Follow-ups from feature port commit
+These were identified after reviewing commit `f7a8121` (`Port + new screens: LocationSharing, Expenses, TouristSpots, eSIM, Insurance, Onboarding, GlobalSearch`). `npx tsc --noEmit` and `npx jest --watchman=false` both pass, so these are product/UX correctness follow-ups rather than compile blockers.
+
+- **Onboarding widget preferences are collected but not persisted** — `OnboardingScreen` lets users toggle "What matters to you", but only writes `@be5afe_onboarded`. Persist the selected preference keys and use them to seed/reorder the Home `WidgetStrip`.
+- **Home quick-action grid has expanded beyond the Phase 19 cap** — Phase 19 specified 15 quick actions max; the new feature tiles bring Home to 20. Move lower-frequency actions into search/widgets or a secondary "More tools" surface.
+- **Expenses totals are wrong for mixed currencies** — `ExpensesScreen` sums raw amounts and displays them as the preferred currency; `convertToDisplay()` exists but is unused and there are no exchange rates in the data model. Either store a normalized base amount/rate at entry time or group totals by currency until conversion is real.
+- **Location sharing fallback can mislead users** — `LocationSharingScreen` falls back to San Francisco coordinates while labelling the map "Your Current Location". Replace with a permission/location unavailable state or selected destination wording.
 
 ---
 
@@ -863,16 +871,8 @@ The hold gesture uses `react-native-reanimated`. All data plumbing (GPS, friends
 
 ---
 
-### NEW — Contextual home screen suggestions
-**Legacy:** Did not exist.
-
-**What's needed:** A "For you" card or strip on the Home screen that surfaces timely, relevant nudges based on data the app already has. Examples:
-- "Flying to Japan in 8 days — 6 common scams to know" (from next trip + scam data)
-- "3 new FCO alerts for Thailand since your last visit"
-- "Your packing list is 40% done — 8 items remaining"
-- "You land tomorrow — download offline maps now"
-
-**Implementation:** A pure logic layer — `getHomeNudges(trips, alerts, packing, location)` → `Nudge[]`. No AI, no new infrastructure. Renders as a horizontally scrollable card strip between the MiniMap and the widget strip on Home. Dismissable per nudge (stored in AsyncStorage).
+### NEW — Contextual home screen suggestions ✅
+> As built: `src/modules/home/nudges.ts` — `getHomeNudges()` pure logic layer (next trip scam warning, imminent departure, packing progress, recent country alerts). `NudgeStrip` component — horizontally scrollable, per-nudge dismiss stored in `@be5afe_nudges_dismissed`. Placed between AlertCountChip and WidgetStrip on Home. Cap of 4 nudges shown at once.
 
 ---
 

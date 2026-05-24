@@ -19,6 +19,7 @@ import type BottomSheet from '@gorhom/bottom-sheet';
 import type { RootStackParamList } from '@app/navigation/types';
 
 export const ONBOARDED_KEY = '@be5afe_onboarded';
+export const WIDGET_PREFS_KEY = '@be5afe_widget_prefs';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -35,14 +36,15 @@ const WIDGET_OPTIONS: { key: WidgetPreference; icon: string; title: string; desc
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-async function completeOnboarding() {
+async function completeOnboarding(prefs?: WidgetPreference[]) {
   await AsyncStorage.setItem(ONBOARDED_KEY, 'true');
+  if (prefs) await AsyncStorage.setItem(WIDGET_PREFS_KEY, JSON.stringify(prefs));
 }
 
 interface Step1Props { onNext: () => void; colors: ReturnType<typeof useTheme> }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface Step2Props { onNext: () => void; onSkip: () => void; colors: ReturnType<typeof useTheme>; sheetRef: React.RefObject<any> }
-interface Step3Props { onDone: () => void; colors: ReturnType<typeof useTheme> }
+interface Step3Props { onDone: (prefs: WidgetPreference[]) => void; colors: ReturnType<typeof useTheme> }
 
 function Step1({ onNext, colors }: Step1Props) {
   return (
@@ -142,7 +144,7 @@ function Step3({ onDone, colors }: Step3Props) {
         })}
       </View>
       <TouchableOpacity
-        onPress={onDone}
+        onPress={() => onDone(Array.from(selected))}
         style={{ backgroundColor: colors.brandDark, paddingVertical: spacing.md, borderRadius: 14, alignItems: 'center', marginTop: spacing.md }}
       >
         <Text style={{ ...typography.body, fontWeight: '700', color: '#fff', fontSize: 17 }}>Done — take me in</Text>
@@ -163,8 +165,8 @@ export function OnboardingScreen() {
     listRef.current?.scrollToIndex({ index: n, animated: true });
   }
 
-  async function finish() {
-    await completeOnboarding();
+  async function finish(prefs: WidgetPreference[]) {
+    await completeOnboarding(prefs);
     navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
   }
 
@@ -179,7 +181,7 @@ export function OnboardingScreen() {
   const STEPS = [
     <Step1 key="s1" onNext={() => goTo(1)} colors={colors} />,
     <Step2 key="s2" onNext={() => goTo(2)} onSkip={() => goTo(2)} colors={colors} sheetRef={locationSheetRef} />,
-    <Step3 key="s3" onDone={finish} colors={colors} />,
+    <Step3 key="s3" onDone={(prefs) => finish(prefs)} colors={colors} />,
   ];
 
   return (

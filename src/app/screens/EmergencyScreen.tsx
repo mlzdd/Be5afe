@@ -8,6 +8,7 @@ import { useAppContext } from '../AppContext';
 import { countryEmergencyNumbers } from '@products/bsafe/emergency';
 import type { EmergencyContact } from '@products/bsafe/emergency/types';
 import { ViewingLocationBanner } from '../components/ViewingLocationBanner';
+import { SOSButton } from '../components/SOSButton';
 
 export function EmergencyScreen() {
   const navigation = useNavigation();
@@ -88,6 +89,9 @@ export function EmergencyScreen() {
         {emergency.contacts.length === 0 && (
           <Text style={styles.empty}>No personal contacts yet. Tap + to add one.</Text>
         )}
+
+        {/* SOS panic button */}
+        <SOSButton />
       </ScrollView>
     </SafeAreaView>
   );

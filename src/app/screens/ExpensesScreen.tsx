@@ -28,11 +28,12 @@ import type { Expense, ExpenseCategory, Budget } from '@modules/expenses/types';
 
 const CATEGORIES: ExpenseCategory[] = ['food', 'transport', 'accommodation', 'activities', 'shopping', 'other'];
 
-function convertToDisplay(amount: number, fromCurrency: string, toCurrency: string, toRate: number): number {
-  if (fromCurrency === toCurrency) return amount;
-  // Simple conversion: assume USD as base, rates relative to USD
-  // This is a best-effort display conversion
-  return amount * toRate;
+function groupByCurrency(expenses: Expense[]): Record<string, number> {
+  const totals: Record<string, number> = {};
+  for (const e of expenses) {
+    totals[e.currency] = (totals[e.currency] ?? 0) + e.amount;
+  }
+  return totals;
 }
 
 interface AddExpenseModalProps {
@@ -229,18 +230,21 @@ export function ExpensesScreen() {
 
   const displayCurrency = preferences.displayCurrency.code;
 
-  const totalSpent = useMemo(() =>
-    expenses.reduce((sum, e) => sum + e.amount, 0),
-    [expenses]
-  );
+  const currencyTotals = useMemo(() => groupByCurrency(expenses), [expenses]);
+  // For budget comparison: only meaningful when all expenses share one currency
+  const singleCurrencyTotal = useMemo(() => {
+    const currencies = Object.keys(currencyTotals);
+    if (currencies.length === 1) return currencyTotals[currencies[0]];
+    return null;
+  }, [currencyTotals]);
 
   const filtered = useMemo(
     () => filterCat === 'all' ? expenses : expenses.filter((e) => e.category === filterCat),
     [expenses, filterCat]
   );
 
-  const budgetStatus = budget ? getBudgetStatus(totalSpent, budget.amount) : 'safe';
-  const budgetPct = budget ? Math.min((totalSpent / budget.amount) * 100, 100) : 0;
+  const budgetStatus = (budget && singleCurrencyTotal !== null) ? getBudgetStatus(singleCurrencyTotal, budget.amount) : 'safe';
+  const budgetPct = (budget && singleCurrencyTotal !== null) ? Math.min((singleCurrencyTotal / budget.amount) * 100, 100) : 0;
 
   const handleDelete = useCallback((id: string) => {
     Alert.alert('Delete expense?', undefined, [
@@ -331,7 +335,18 @@ export function ExpensesScreen() {
           <Text style={s.budgetLabel}>TOTAL SPENT</Text>
           {budget && <Text style={s.budgetMax}>of {formatAmount(budget.amount, budget.currency)}</Text>}
         </View>
-        <Text style={s.budgetAmount}>{formatAmount(totalSpent, displayCurrency)}</Text>
+        {Object.keys(currencyTotals).length === 0 ? (
+          <Text style={s.budgetAmount}>—</Text>
+        ) : Object.keys(currencyTotals).length === 1 ? (
+          <Text style={s.budgetAmount}>{formatAmount(Object.values(currencyTotals)[0], Object.keys(currencyTotals)[0])}</Text>
+        ) : (
+          <View style={{ gap: 2 }}>
+            {Object.entries(currencyTotals).map(([cur, amt]) => (
+              <Text key={cur} style={s.budgetAmount}>{formatAmount(amt, cur)}</Text>
+            ))}
+            <Text style={{ ...s.budgetLabel, marginTop: 4 }}>Multiple currencies — add budget per currency</Text>
+          </View>
+        )}
         {budget && (
           <>
             <View style={[s.progressBar, { marginTop: spacing.sm }]}>
