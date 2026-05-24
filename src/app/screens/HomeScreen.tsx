@@ -70,6 +70,11 @@ export function HomeScreen() {
     { label: 'My Trips', icon: 'airplane', color: '#9C27B0', onPress: () => navigation.navigate('HomeTabs', { screen: 'MyTrips' } as never) },
     { label: 'Report Scam', icon: 'add-circle', color: colors.warning, onPress: () => navigation.navigate('ReportIncident') },
     { label: 'Chat', icon: 'chatbubble-ellipses', color: colors.info, onPress: () => chatSheetRef.current?.expand() },
+    { label: 'Expenses', icon: 'receipt', color: '#4CAF50', onPress: () => navigation.navigate('Expenses') },
+    { label: 'Tourist Spots', icon: 'map', color: '#FF7043', onPress: () => navigation.navigate('TouristSpots') },
+    { label: 'Location Share', icon: 'location', color: '#26C6DA', onPress: () => navigation.navigate('LocationSharing') },
+    { label: 'eSIM', icon: 'wifi', color: '#7E57C2', onPress: () => navigation.navigate('ESim') },
+    { label: 'Insurance', icon: 'shield-checkmark', color: '#26A69A', onPress: () => navigation.navigate('Insurance') },
   ], [colors, navigation]);
 
   return (
@@ -86,15 +91,26 @@ export function HomeScreen() {
               <Text style={styles.heading}>Be5afe</Text>
               <Text style={styles.sub}>Your travel safety companion</Text>
             </View>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Open chat"
-              activeOpacity={0.8}
-              onPress={() => chatSheetRef.current?.expand()}
-              style={styles.chatButton}
-            >
-              <Ionicons name="chatbubble-ellipses" size={22} color={colors.brandDark} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Search"
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('GlobalSearch')}
+                style={styles.chatButton}
+              >
+                <Ionicons name="search" size={22} color={colors.brandDark} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Open chat"
+                activeOpacity={0.8}
+                onPress={() => chatSheetRef.current?.expand()}
+                style={styles.chatButton}
+              >
+                <Ionicons name="chatbubble-ellipses" size={22} color={colors.brandDark} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <Card padding="lg" onPress={() => locationSheetRef.current?.expand()} style={styles.locationCard}>
@@ -222,6 +238,11 @@ const createStyles = (colors: ReturnType<typeof useTheme>) => StyleSheet.create(
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
   },
   heading: {
     ...typography.h1,

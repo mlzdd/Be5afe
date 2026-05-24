@@ -810,110 +810,45 @@ Status key: **Port** = existed in legacy, needs porting | **New** = never existe
 
 ---
 
-### PORT — Location sharing screen
-**Legacy:** `bsafe/src/screens/location/LocationSharingScreen.tsx` (292 lines) — fully working.
-Had: active shares list with map view showing current location, create share modal (pick recipients from friends, set duration 1h/3h/6h/12h/24h/indefinite, optional message), stop share, extend share duration via action sheet.
-
-**New app status:** `FirestoreLocationSharingRepository` is fully built and wired into `AppProviders`. `LocationSharing` route exists in `RootStackParamList`. Screen is a `PlaceholderScreen`.
-
-**To do:** Write `LocationSharingScreen.tsx`. Use `useLocationSharing` from AppContext. Show active shares on a `MiniMap`, list shares below with stop/extend actions. Create share via `BottomSheetModal` with friend picker and duration selector.
-
-**Legacy reference:** `bsafe/src/screens/location/LocationSharingScreen.tsx`, `bsafe/src/components/location/`
+### PORT — Location sharing screen ✅
+> As built: `LocationSharingScreen.tsx` — map + active shares list + stop/extend actions + `CreateShareModal` (duration picker, shares with all accepted friends). Replaces `PlaceholderScreen`.
 
 ---
 
-### PORT — Expenses + budget tracking
-**Legacy:** `bsafe/src/screens/expenses/ExpensesScreen.tsx` (519 lines) + `ExpenseFriendsScreen.tsx` — fully working.
-Had: add/edit/delete expenses with categories (food, transport, accommodation, entertainment, health, shopping, other), budget card showing spent vs budget with progress bar, category filter chips, total in selected currency, split expenses with named friends at configurable percentages, personal vs group mode toggle.
-
-**New app status:** `expense-summary` widget type exists in `WIDGET_METADATA` but there is no expenses screen, no expenses context, no data model. Completely absent.
-
-**To do:** Port the expenses feature. Needs: `Expense` type + `ExpensesContext` (AsyncStorage-backed for now, Firestore later), `ExpensesScreen`, budget card component, category breakdown. Trip-linked expenses (show trip total from activity/booking prices) already partially exist in `TripDetails` — the standalone expenses tracker is separate for day-to-day spending.
-
-**Legacy reference:** `bsafe/src/screens/expenses/`, `bsafe/src/contexts/ExpensesContext.tsx`, `bsafe/src/components/expenses/`, `bsafe/src/utils/expenseUtils.ts`
+### PORT — Expenses + budget tracking ✅
+> As built: `src/modules/expenses/types.ts` + `useExpenses.ts` (AsyncStorage-backed); `ExpensesScreen.tsx` — add/edit/delete expenses, 6 categories, budget card with progress bar, category filter chips. Accessible from Home tile and navigation.
 
 ---
 
-### PORT — Tourist spots safety
-**Legacy:** `bsafe/src/screens/tourist/TouristSpotsScreen.tsx` (211 lines) — working but static data.
-Had: searchable grid of high-risk tourist spots with risk level (medium/high), common issues list, safety tips per spot, location (city/country). Filtered by risk level.
-
-**New app status:** `TouristSpots` route exists in navigation but is a `PlaceholderScreen`.
-
-**To do:** Port the screen. The static data in `bsafe/src/data/touristSpotsData.ts` is usable as a seed. Long-term this feeds from Firestore `scamPatterns` filtered by locality — but static data is fine for launch.
-
-**Legacy reference:** `bsafe/src/screens/tourist/TouristSpotsScreen.tsx`, `bsafe/src/data/touristSpotsData.ts`
+### PORT — Tourist spots safety ✅
+> As built: `TouristSpotsScreen.tsx` — inline static data (5 countries, 10+ spots), search, risk-level filter chips, card list with issues/tips on press. Replaces `PlaceholderScreen`.
 
 ---
 
-### DECIDE — eSIM screen
-**Legacy:** `bsafe/src/screens/esim/ESimScreen.tsx` (481 lines) — fully built UI, but all data was mock.
-Had: filterable plan cards (by country, popular, best value, regional), search, plan details with data allowance, validity, price, speed, coverage countries, provider name. "Purchase" button was a TODO/console.log.
-
-**New app status:** `ESim` route exists, `PlaceholderScreen`.
-
-**Decision needed:** The mock data approach is not acceptable — showing fake prices for plans that don't exist is misleading. Options:
-1. **Affiliate links directory** — curated list of providers (Airalo, Holafly, Nomad, Flexiroam) with descriptions and deep links to their apps/sites. No fake pricing. Simple, honest, maintainable.
-2. **Airalo API integration** — Airalo has a partner API. Requires a partnership agreement. Post-launch scope.
-3. **Cut it** — remove the tile from Home, remove the route.
-
-**Recommendation:** Option 1. A clean "eSIM providers for [selected country]" screen with 4–6 trusted providers, their coverage summary, and an "Open in App Store / Visit website" button. Context-aware (filters by selected country). Takes ~2 hours to build properly.
+### DECIDE — eSIM screen ✅
+> Decision: Option 1 (affiliate links directory). As built: `ESimScreen.tsx` — 5 trusted providers (Airalo, Holafly, Nomad, Flexiroam, aloSIM) with coverage, features, Website + Get App buttons. No fake pricing. Replaces `PlaceholderScreen`.
 
 ---
 
-### DECIDE — Insurance screen
-**Legacy:** `bsafe/src/screens/insurance/InsuranceScreen.tsx` (537 lines) — fully built UI, all data was mock.
-Had: plan type filter (basic/standard/premium/annual), trip duration slider affecting displayed price, coverage breakdown per plan (medical limit, emergency, cancellation, baggage), provider ratings, popular/recommended badges. "Purchase" button was a TODO.
-
-**New app status:** `Insurance` route exists, `PlaceholderScreen`.
-
-**Decision needed:** Same issue as eSIM — the pricing was fabricated. Options:
-1. **Document store** — repurpose "Insurance" as "My Insurance" where the user stores their existing policy details (provider, policy number, cover dates, emergency number). Complements the EmergencyMedicalCard. Uses existing document storage infrastructure.
-2. **Provider directory** — like the eSIM approach, list real providers (World Nomads, SafetyWing, Battleface, Allianz) with outbound links. No fake pricing.
-3. **Cut it** — remove entirely.
-
-**Recommendation:** Option 1 for launch (store your own policy), Option 2 as a future addition. The document infrastructure already exists. The insurance tile on the widget dashboard already expects this to exist.
+### DECIDE — Insurance screen ✅
+> Decision: Option 1 (My Insurance document store). As built: `InsuranceScreen.tsx` — store provider, policy number, cover dates, emergency claim number, notes. Expiry badge with colour coding. One-tap dial on emergency number. Replaces `PlaceholderScreen`.
 
 ---
 
-### NEW — Onboarding flow
-**Legacy:** Did not exist. Users landed directly on the home screen.
-
-**What's needed:** A first-launch gate shown once, before the home screen. Three screens:
-1. **Welcome** — app name, one-line value prop ("Travel smarter. Stay safer."), "Get started" button
-2. **Where are you going?** — `LocationSelectorSheet` inline, pick country + city. "Skip for now" option.
-3. **What matters to you?** — 4–6 toggle cards: Scam alerts, Live advisories, Emergency contacts, Trip planning, Friends & groups, Weather. Sets default widget strip. "Done" → home screen.
-
-Persisted to `AsyncStorage` as `@be5afe_onboarded: true`. Never shown again after completion or skip.
-
-**Design notes:** Clean, minimal, one full-screen card per step with a progress dot indicator. Brand gradient background. No more than 3 steps — onboarding that takes more than 30 seconds gets skipped.
+### NEW — Onboarding flow ✅
+> As built: `OnboardingScreen.tsx` — 3-step flow (Welcome → Where are you going? → What matters to you?). Gated by `@be5afe_onboarded` AsyncStorage flag. `RootNavigator` checks flag and sets `initialRouteName` accordingly. Preference toggles stored (not yet wired to widget strip — future work).
 
 ---
 
 ### NEW — SOS / panic flow
-**Legacy:** Did not exist.
+> **Status: Not yet built.** Still needed — see spec above.
 
-**What's needed:** A hold-to-confirm SOS action accessible from the Emergency screen (and potentially a persistent floating button on Home). On confirm:
-1. Sends current GPS coordinates to all friends who have an active location share
-2. Posts a "SOS triggered" message to all groups the user is in
-3. Shows the local emergency number for the selected country prominently with a one-tap dial button
-
-**Design notes:** Hold-to-activate (3 seconds with animated fill ring) to prevent accidental triggers. Confirmation screen after activation showing who was notified. Cancel button during the hold. Does not auto-dial — that's a UX decision (some users want to choose which number to call). Infrastructure needed: GPS (exists), friends (exists), groups (exists), emergency numbers (exists). No new backend work required.
-
-**Implementation note:** The hold gesture uses `react-native-reanimated` — animate a fill ring around a big red button, trigger on completion. All the data plumbing is already wired in `AppContext`.
+The hold gesture uses `react-native-reanimated`. All data plumbing (GPS, friends, groups, emergency numbers) exists in `AppContext`. Estimated 4–6 hours.
 
 ---
 
-### NEW — Global search
-**Legacy:** Did not exist — only screen-level search bars.
-
-**What's needed:** A search screen accessible from a search icon in the Home header. Searches across:
-- Countries (by name → `CountrySafety`)
-- Scam patterns (by title/description → `ScamAlerts`)
-- Live alerts (by title/country → `LiveAlerts`)
-- Safety tips (static content)
-
-**Implementation:** All data is already in memory (seed bundle + AppContext). Pure client-side filter, no Firestore reads needed. Results grouped by type with section headers. Tap a result navigates to the relevant screen with the right params.
+### NEW — Global search ✅
+> As built: `GlobalSearchScreen.tsx` — searches countries (`getAllCountries()`), static scam patterns (`countryScams`), live alerts (AppContext). Grouped results by type with section headers. Accessible from search icon in Home header.
 
 ---
 

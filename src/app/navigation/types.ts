@@ -34,6 +34,9 @@ export type RootStackParamList = {
   LocalApps: undefined;
   Weather: undefined;
   Chat: { groupId: string };
+  Expenses: undefined;
+  GlobalSearch: undefined;
+  Onboarding: undefined;
 };
 
 export type BottomTabParamList = {
