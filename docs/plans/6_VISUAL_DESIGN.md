@@ -97,27 +97,16 @@ Shorthand: `screenPadding:16` · `cardPadding:12` · `sectionSpacing:24`
 
 ### How to consume the theme in components
 
-**Current gap:** all existing screens import `colors` directly — the hardcoded light object. Dark mode is not yet active in any screen. All new components and all screens touched during Phases 19–22 must use `useColors()` instead.
+**Current gap:** all existing screens import `colors` directly — the hardcoded light object. Dark mode is not yet active in any screen. All new components and all screens touched during Phases 19–22 must use `useTheme()` instead.
 
-Add this hook to `src/shared/theme/index.ts` (or `src/shared/theme/useColors.ts`) as the first step of Phase 19:
+`useTheme()` already exists at `src/shared/hooks/useTheme.ts` — do NOT create a `useColors()` hook.
 
 ```typescript
-import { useThemeScheme } from './ThemeContext';
-import { colors, darkColors } from './colors';
-
-export function useColors() {
-  const { scheme } = useThemeScheme();
-  return scheme === 'dark' ? darkColors : colors;
-}
-```
-
-Then in every component:
-```typescript
-import { useColors, spacing, typography, radius, shadows } from '@shared/theme';
+import { useTheme } from '@shared/hooks/useTheme';
+import { spacing, typography, radius, shadows } from '@shared/theme';
 
 export function MyComponent() {
-  const colors = useColors();
-  // colors.background, colors.textPrimary etc. now resolve correctly for the active scheme
+  const colors = useTheme(); // resolves to light or dark palette automatically
 }
 ```
 
@@ -706,7 +695,9 @@ These are app-level components (not generic UI primitives — those are in `src/
 
 Ordered by dependency chain — each phase's foundations are used by the next:
 
-### Phase 19 step 0 — Shared UI library + bottom sheet install
+### ✅ Phase 19 step 0 — Shared UI library + bottom sheet install
+Complete — `@gorhom/bottom-sheet` is installed and `src/shared/ui/` exports the theme-aware Card, BottomSheetModal, Chip, SettingsRow, SettingsSection, EmptyState, and SectionHeader primitives.
+
 **Do this first, before any screen work. Every subsequent phase depends on these primitives.**
 
 - `npx expo install @gorhom/bottom-sheet` — NOT yet in `package.json`, must be installed
