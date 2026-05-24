@@ -850,13 +850,19 @@ Status key: **Port** = existed in legacy, needs porting | **New** = never existe
 
 ---
 
-### REVIEW — Follow-ups from feature port commit
-These were identified after reviewing commit `f7a8121` (`Port + new screens: LocationSharing, Expenses, TouristSpots, eSIM, Insurance, Onboarding, GlobalSearch`). `npx tsc --noEmit` and `npx jest --watchman=false` both pass, so these are product/UX correctness follow-ups rather than compile blockers.
+### REVIEW — Follow-ups from feature port commits
+Latest review after `f7a8121` and `9fb1410`: `npx tsc --noEmit` and `npx jest --watchman=false` both pass (19 suites / 91 tests). Remaining items are product correctness, architecture, and maintainability follow-ups before starting the Scam map layer.
 
-- **Onboarding widget preferences are collected but not persisted** — `OnboardingScreen` lets users toggle "What matters to you", but only writes `@be5afe_onboarded`. Persist the selected preference keys and use them to seed/reorder the Home `WidgetStrip`.
-- **Home quick-action grid has expanded beyond the Phase 19 cap** — Phase 19 specified 15 quick actions max; the new feature tiles bring Home to 20. Move lower-frequency actions into search/widgets or a secondary "More tools" surface.
-- **Expenses totals are wrong for mixed currencies** — `ExpensesScreen` sums raw amounts and displays them as the preferred currency; `convertToDisplay()` exists but is unused and there are no exchange rates in the data model. Either store a normalized base amount/rate at entry time or group totals by currency until conversion is real.
-- **Location sharing fallback can mislead users** — `LocationSharingScreen` falls back to San Francisco coordinates while labelling the map "Your Current Location". Replace with a permission/location unavailable state or selected destination wording.
+- ✅ **Home quick-action grid cap restored** — Home now renders the first 15 quick actions and moves the rest behind a collapsible "More tools" section.
+- ✅ **Location sharing no longer falls back to San Francisco** — `LocationSharingScreen` now shows an unavailable/permission state when coordinates are absent.
+- ◐ **Onboarding widget preferences are persisted but not consumed** — `OnboardingScreen` writes `@be5afe_widget_prefs`, but `WidgetStrip` / widget defaults do not read it yet. Use the stored preference keys to seed or reorder the Home widgets.
+- ◐ **Expenses mixed-currency display is improved but budget comparison still needs tightening** — totals are grouped by currency, but budget progress can still render when the single expense currency differs from `budget.currency`. Only show progress when currencies match, or add real rate-at-entry normalization.
+- **SOS copy overstates notification coverage** — `SOSButton` posts SOS messages to groups only, while UI says "all contacts" and counts accepted friends. Either change copy to "groups" or implement direct friend notification / active-share targeting.
+- **Login screen visual system is off-brand** — current auth screen imagery/colour treatment reads purple and does not match the app's green/teal safety palette. Redesign the login/sign-up screen or edit/replace the images so the first-run auth experience matches the rest of Be5afe.
+- **Login/sign-up keyboard avoidance is broken** — tapping email/password fields brings the keyboard over the inputs, hiding what the user is typing. Wrap the auth form in a proper `KeyboardAvoidingView` / scroll container with safe-area-aware spacing and test on iOS + Android.
+- **AI chat sheet jitters when the bot responds** — the chat bottom sheet/window appears to resize rapidly as assistant messages render, creating visible height jitter. Stabilize the chat container with fixed snap points / fixed modal height, keep message growth inside a scroll view, and avoid content-driven sheet height recalculation during responses.
+- **Domain module imports infra directly** — `useLocationSharing` imports `ExpoLocationService` from `@infra`. Introduce a shared location service contract and depend on that from modules.
+- **Large screen files need decomposition before more feature work** — `LocalAppsScreen`, `ExpensesScreen`, `HealthGuideScreen`, `WidgetStrip`, `LocationSharingScreen`, `WeatherScreen`, `TouristSpotsScreen`, and `HomeScreen` are all 350+ lines or close. Move static data, modals, cards, and pure transforms into feature-local `data/`, `components/`, and utility modules.
 
 ---
 
