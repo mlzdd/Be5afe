@@ -1,6 +1,6 @@
 # Be5afe — Data Pipeline Plan
 
-Last updated: 2026-05-17
+Last updated: 2026-05-24
 
 ---
 
@@ -41,10 +41,10 @@ D1, D2, D3, D4, and D7 are all unblocked and can run in parallel once their loca
 | Phase | Status | Current state |
 |---|---|---|
 | D1 — Emergency numbers seed | ✅ Complete | 40 high-confidence records seeded; idempotency verified |
-| D2 — Official alert feeds | 🚧 In progress | FCDO + State Dept live; DFAT/Smartraveller still pending |
+| D2 — Official alert feeds | ✅ Complete | FCDO (124 alerts) + State Dept live; DFAT blocked by Cloudflare — deferred |
 | D3 — Packing list + medical card sync | ✅ Complete | Authenticated Firestore persistence + guest fallback + migration path shipped |
-| D4 — Admin portal v1 | 🚧 In progress | All five screens built locally; live admin verification still pending |
-| D5 — ScamReport submission + review path | 🚧 In progress | Mobile flow built locally; live submit → moderate → render loop still pending |
+| D4 — Admin portal v1 | ✅ Complete | All five screens verified against live Firestore; admin claim granted; 54 scamPatterns migrated |
+| D5 — ScamReport submission + review path | ✅ Complete | Submit → moderate → render loop verified end-to-end; inline edit before accept shipped |
 | D6 — AI triage | ⏳ Not started | Waits on a proven D5 path |
 | D7 — Seed export + diff fetch | ⏳ Not started | Independent next major branch |
 | D8 — GDPR deletion flow | ⏳ Not started | Unblocked by D3 technically; still needs implementation + legal review |
@@ -109,7 +109,7 @@ D1, D2, D3, D4, and D7 are all unblocked and can run in parallel once their loca
 - Added `scripts/ingest-state-dept-alerts.ts` using the official State Department RSS feed; current advisories live in Firestore under stable country-based IDs
 - Added shared alert contract, Firestore alert repository, `useAlerts`, and a real `LiveAlertsScreen`
 - Verified reruns refresh existing alerts rather than creating duplicates
-- Remaining before full scope completion: DFAT/Smartraveller adapter
+- DFAT/Smartraveller: Cloudflare blocks all programmatic access; headless browser approach deferred — FCO + State Dept provide sufficient global coverage for launch
 
 ---
 
@@ -157,11 +157,13 @@ Fields surfaced in v1: `updatedAt`, `updatedBy`, `previousStatus` (Decision 14 �
 - Can publish, archive, and moderate ScamPatterns end-to-end
 - Auth-gated (Firebase Auth, admin email allowlist)
 
-**As built so far (2026-05-17):**
+**As built (2026-05-24):**
 - Added a separate Vite + React admin app under `admin/`
 - Built all five v1 screens, custom-claim auth gating, and allowlisted admin-claim grant script
 - Added admin-only Firestore writes plus transactional lifecycle event writes for ScamPattern and ScamReport moderation actions
-- Remaining before completion: verify the portal end-to-end against a live admin account and Firestore project
+- Added `scripts/migrate-scams-to-patterns.ts` — migrates legacy `scams` collection into canonical `scamPatterns` with full governance fields; idempotent; 54 records created
+- Deployed Firestore rules + indexes to `be5safe` project; granted admin claim to operator account
+- Verified all five screens against live Firestore: emergency numbers ✅, alerts ✅, scam patterns ✅ (54 records), stale content ✅, moderation queue ✅ (empty pending D5)
 
 ---
 
@@ -185,7 +187,8 @@ Fields surfaced in v1: `updatedAt`, `updatedBy`, `previousStatus` (Decision 14 �
 - Added mobile ScamReport submission flow behind a repository contract and replaced the Report Incident placeholder screen
 - Authenticated submissions write a client-assigned opaque ID, initial `submitted` status, and a paired append-only `ScamReportSubmitted` event
 - Added public subscription support for `accepted` / `auto_published` reports and rendered them in Scam Alerts with a visually distinct Reported treatment plus reviewed/unreviewed sub-signal
-- Remaining before completion: live-submit one report, confirm it lands in the admin queue, accept it, and verify its in-app rendering from Firestore after D4 live verification is complete
+- Added inline edit form to moderation queue (title, description, category, severity, location) with Save draft / Save & Accept / Reject / Duplicate actions
+- Verified end-to-end on 2026-05-24: submitted from Pixel 8 via Expo Go → appeared in admin queue → edited + accepted → rendered in-app with Reported styling
 
 ---
 

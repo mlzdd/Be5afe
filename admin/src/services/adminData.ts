@@ -100,6 +100,18 @@ export async function updatePatternFields(
   });
 }
 
+export async function updateReportFields(
+  reportId: string,
+  updates: Partial<Pick<ScamReport, 'title' | 'description' | 'category' | 'severity' | 'localityText'>>,
+  actorId: string,
+): Promise<void> {
+  await updateDoc(doc(requireDb(), 'scamReports', reportId), {
+    ...updates,
+    updatedAt: nowIso(),
+    updatedBy: actorId,
+  });
+}
+
 export async function moderateReport(
   reportId: string,
   nextStatus: Extract<ScamReport['status'], 'accepted' | 'rejected' | 'duplicate'>,

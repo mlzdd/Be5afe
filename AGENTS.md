@@ -2,7 +2,7 @@
 
 > Read this first. Everything else is referenced from here.
 
-Last updated: 2026-05-17
+Last updated: 2026-05-24
 
 ---
 
@@ -23,6 +23,17 @@ Both dimensions matter. An agent that treats this as only a software project wil
 |---|---|---|
 | **Be5afe** (this repo) | `/Users/rm/code/Be5afe` | Active development. The modular rebuilt app. Work here. |
 | **bsafe** (legacy) | `/Users/rm/code/bsafe` | Original codebase. Source of governance docs, seed data, and historical decisions. Do not develop here. |
+
+### Top-level structure in this repo
+
+```
+src/          — mobile app (React Native / Expo)
+admin/        — content management portal (Vite + React web app, auth-gated)
+scripts/      — seed/migration/ingest scripts (Node, run manually or at build time)
+docs/plans/   — architecture and data governance documents
+```
+
+`admin/` and the mobile `src/` app both read/write the same Firestore project (`be5safe`). They share no UI components — the boundary is the Firestore schema and TypeScript types only.
 
 The active planning and data documents live in `docs/plans/` in this repo:
 
@@ -118,7 +129,7 @@ The app boots cleanly without credentials — Firebase-backed features degrade g
 
 ## Current build status
 
-**Phases 1–18 complete** (app phases). **72 tests, 12 suites, all passing.**
+**Phases 1–18 complete** (app phases). **91 tests, 19 suites, all passing.**
 
 See `MODULAR_APP_PLAN_PHASES_AS_BUILT.md` for the full phase-by-phase record of what was built, key decisions made, and bugs fixed. This is the authoritative source for "why does X work this way."
 
@@ -130,7 +141,9 @@ See `MODULAR_APP_PLAN_PHASES_AS_BUILT.md` for the full phase-by-phase record of 
 | Home screen with 15 quick-action tiles | ✅ |
 | Trips — full CRUD, add/edit flow, itinerary, bookings | ✅ |
 | Emergency contacts + country numbers | ✅ |
-| Scam alerts (static data + Firestore seeded) | ✅ |
+| Scam alerts (static data + Firestore seeded) + Reported tier rendering | ✅ |
+| ScamReport submission flow (mobile) | ✅ |
+| Live alert feeds (FCDO + State Dept, Firestore-backed) | ✅ |
 | Country safety + details + local laws | ✅ |
 | Guides screen (safety / scams / tips tabs) | ✅ |
 | Health guide (general + per-country) | ✅ |
@@ -150,20 +163,28 @@ See `MODULAR_APP_PLAN_PHASES_AS_BUILT.md` for the full phase-by-phase record of 
 | Error boundary + loading states | ✅ |
 | Firestore data seeded (32 countries, 54 scams) | ✅ |
 
-### What remains
+### What remains — app phases
 
-| Area | Status | Blocker |
+| Area | Status | Notes |
 |---|---|---|
-| Packing list → Firestore sync | ⏳ | Decided, not yet implemented |
-| Medical card → Firestore sync | ⏳ | Decided, not yet implemented |
-| ScamReport submission (user-facing) | ⏳ | Needs scam report pipeline |
-| AI triage Cloud Function | ⏳ | Needs ScamReport submission first |
-| Admin portal v1 | ⏳ | Unblocked — canonical IDs decided (Decision 12) |
-| Official alert feeds (DFAT/FCO/State Dept) | ⏳ | Independent, unblocked |
-| Wikidata emergency numbers seed | ⏳ | Independent, unblocked |
-| Build-time seed export + app-start diff fetch | ⏳ | Needs admin portal first |
-| GDPR deletion flow implementation | ⏳ | Pre-launch requirement |
 | App Store build (EAS, icons, splash) | ⏳ | Needs Apple/Google dev accounts |
+
+### Data pipeline phases (D1–D9) — see `docs/plans/5_DATA_PLAN_AS_BUILT.md` for full detail
+
+| Phase | Status | Notes |
+|---|---|---|
+| D1 — Emergency numbers seed (Wikidata) | ✅ | 40 high-confidence records in `emergencyNumbers/` |
+| D2 — Official alert feeds | ✅ | FCDO + State Dept live; DFAT blocked by Cloudflare, deferred |
+| D3 — Packing list + medical card → Firestore | ✅ | Hybrid repo (Firestore auth / AsyncStorage guest) + migration path |
+| D4 — Admin portal v1 | ✅ | All 5 screens verified against live Firestore; 54 scamPatterns migrated from legacy `scams` collection |
+| D5 — ScamReport submission + human review | ✅ | Submit → moderate (with inline edit) → render loop verified end-to-end |
+| D6 — AI triage Cloud Function | ⏳ | Blocked on proven D5 path |
+| D7 — Build-time seed export + app-start diff fetch | ⏳ | Independent; unblocked |
+| D8 — GDPR deletion flow | ⏳ | Technically unblocked; needs Decision 18 legal review before launch |
+| D9a — Store-ready build | ⏳ | Needs D3, D4, D8 + Apple/Google accounts |
+| D9b — Public launch readiness | ⏳ | Needs full pipeline |
+
+**Critical path:** D4 live verification → D5 live verification → D6. D7 and D8 are parallel.
 
 ---
 
@@ -285,6 +306,10 @@ Route types in `src/app/navigation/types.ts`. When adding a new screen:
 | `FirestoreGroupsRepository` | `GroupsRepository` | Firestore `groups`, `messages` subcollection |
 | `FirestoreLocationSharingRepository` | `LocationSharingRepository` | Firestore `locationShares` |
 | `FirestoreLocationRepository` | `LocationRepository` | Firestore |
+| `FirestoreAlertRepository` | `AlertRepository` | Firestore `alerts/` |
+| `FirestoreScamReportRepository` | `ScamReportRepository` | Firestore `scamReports/` |
+| `HybridPackingListRepository` | `PackingListRepository` | Firestore (auth) / AsyncStorage (guest) |
+| `HybridMedicalCardRepository` | `MedicalCardRepository` | Firestore (auth) / AsyncStorage (guest) |
 | `GooglePlacesClient` | `PlacesClient` | Google Places API |
 | `ExpoLocationService` | (direct) | `expo-location` |
 | `GeminiClient` | `ChatCompletionClient` | Gemini 2.5 Flash |

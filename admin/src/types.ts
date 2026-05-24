@@ -30,8 +30,12 @@ export interface ScamReport extends AuditFields {
   id: string;
   title?: string;
   description?: string;
+  category?: string;
   countryId?: string;
+  countryName?: string;
+  localityText?: string;
   severity?: string;
+  submittedAt?: string;
   status: ReportStatus;
 }
 
